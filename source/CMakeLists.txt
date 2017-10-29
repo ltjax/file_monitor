@@ -1,12 +1,12 @@
 
 set(TARGET_NAME file_monitor)
 add_library(${TARGET_NAME}
-  ChangeList.cpp
-  ChangeList.hpp
-  ChangeListFactory.cpp
-  ChangeListFactory.hpp
-  MacChangeList.cpp
-  MacChangeList.hpp)
+  monitor.cpp
+  monitor.hpp
+  factory.cpp
+  factory.hpp
+  mac_monitor.cpp
+  mac_monitor.hpp)
 
 
 target_include_directories(${TARGET_NAME}

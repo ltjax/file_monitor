@@ -3,47 +3,41 @@
 #include <CoreServices/CoreServices.h>
 #include <boost/filesystem/operations.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
-#include <hash-library/keccak.h>
 #include <thread>
 #include <mutex>
 #include <map>
-#include <spdlog/logger.h>
-#include "ChangeList.hpp"
+#include "monitor.hpp"
 
-class CMacChangeList : public CChangeList
+namespace file_monitor
+{
+class mac_monitor : public monitor
 {
 public:
-    using Path = boost::filesystem::path;
-    using FileList = std::vector<boost::filesystem::path>;
-    using ChangeEvent = std::function<void(Path const&, FileList const&)>;
+    explicit mac_monitor();
+    ~mac_monitor() override;
 
-    explicit CMacChangeList(std::shared_ptr<spdlog::logger> Logger);
-    ~CMacChangeList() override;
+    void stop() override;
+    void start(path_t const& path) override;
 
-    void Stop() override;
-    void Start(Path const& Path) override;
-
-    void Poll(ChangeEvent const& Consumer) override;
+    void poll(change_event_t const& consumer) override;
 private:
     void Run(FSEventStreamRef Stream);
 
     struct Detail;
 
     std::string HashFile(boost::filesystem::path const& Filepath);
-    std::shared_ptr<spdlog::logger> GetLogger() const;
     void PathChanged(boost::filesystem::path const& Path);
     boost::filesystem::path RelativePath(boost::filesystem::path const& File);
     void HashFilesIn(boost::filesystem::path const& Root);
 
-
-    std::shared_ptr<spdlog::logger> mLogger;
     boost::filesystem::path mBasePath;
     std::thread mEventThread;
     CFRunLoopRef mLoop = nullptr;
     std::map<boost::filesystem::path, std::string> mFileHash;
 
     std::mutex mQueueMutex;
-    FileList mChanged;
+    file_list_t mChanged;
     std::atomic_bool mKeepRunning{false};
     CFRunLoopSourceRef mStopSource=nullptr;
 };
+}

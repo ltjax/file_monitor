@@ -1,7 +1,7 @@
 #include <CoreServices/CoreServices.h>
-#include "MacChangeList.hpp"
+#include "mac_monitor.hpp"
 
-struct CMacChangeList::Detail
+struct file_monitor::mac_monitor::Detail
 {
 
     static void ChangeEvent(ConstFSEventStreamRef streamRef,
@@ -11,7 +11,7 @@ struct CMacChangeList::Detail
                             const FSEventStreamEventFlags eventFlags[],
                             const FSEventStreamEventId eventIds[])
     {
-        auto that = static_cast<CMacChangeList*>(clientCallBackInfo);
+        auto that = static_cast<mac_monitor*>(clientCallBackInfo);
         auto paths = reinterpret_cast<char**>(eventPaths);
 
         for (int i = 0; i < numEvents; i++)
@@ -27,10 +27,9 @@ struct CMacChangeList::Detail
 
 };
 
-void CMacChangeList::Start(boost::filesystem::path const& Path)
+void file_monitor::mac_monitor::start(boost::filesystem::path const& Path)
 {
     mKeepRunning = true;
-    GetLogger()->info("Starting file monitor on '{0}'", Path.string());
     this->mBasePath = Path;
     CFStringRef PathAsStringRef = CFStringCreateWithCString(nullptr, Path.string().c_str(), kCFStringEncodingUTF8);
     CFArrayRef PathsToWatch = CFArrayCreate(NULL, (const void**) &PathAsStringRef, 1, NULL);
@@ -52,36 +51,29 @@ void CMacChangeList::Start(boost::filesystem::path const& Path)
                                      });
 }
 
-void CMacChangeList::Run(FSEventStreamRef Stream)
+void file_monitor::mac_monitor::Run(FSEventStreamRef Stream)
 {
     this->mLoop = CFRunLoopGetCurrent();
-    GetLogger()->info("Hashing all files in {0}", mBasePath.string());
     this->HashFilesIn(mBasePath);
-    GetLogger()->info("Done hashing files..");
     FSEventStreamScheduleWithRunLoop(Stream, mLoop, kCFRunLoopDefaultMode);
     FSEventStreamStart(Stream);
-    //if (!mKeepRunning)
-    //    return;
-    CFRunLoopAddSource(mLoop, mStopSource, kCFRunLoopDefaultMode);
 
-    GetLogger()->info("Starting run loop!");
+    CFRunLoopAddSource(mLoop, mStopSource, kCFRunLoopDefaultMode);
     CFRunLoopRun();
-    GetLogger()->info("Ending run loop!");
 }
 
 
-std::string CMacChangeList::HashFile(boost::filesystem::path const& Filepath)
+/*std::string file_monitor::CMacChangeList::HashFile(boost::filesystem::path const& Filepath)
 {
     boost::iostreams::mapped_file_source File(Filepath.string());
 
     Keccak Hasher;
     return Hasher(File.data(), File.size());
-}
+}*/
 
-void CMacChangeList::HashFilesIn(boost::filesystem::path const& Root)
+void file_monitor::mac_monitor::HashFilesIn(boost::filesystem::path const& Root)
 {
     using Iterator = boost::filesystem::recursive_directory_iterator;
-    auto Log = GetLogger();
 
     for (auto& Entry : boost::make_iterator_range(Iterator(Root), {}))
     {
@@ -100,12 +92,12 @@ void CMacChangeList::HashFilesIn(boost::filesystem::path const& Root)
         }
         catch (std::exception const& Error)
         {
-            Log->error("Unable to hash file '{0}': {1}", Entry.path().string(), Error.what());
+          // TODO: log this?
         }
     }
 }
 
-boost::filesystem::path CMacChangeList::RelativePath(boost::filesystem::path const& File)
+boost::filesystem::path file_monitor::mac_monitor::RelativePath(boost::filesystem::path const& File)
 {
     boost::filesystem::path Result;
     auto Prefix = std::distance(mBasePath.begin(), mBasePath.end());
@@ -116,11 +108,10 @@ boost::filesystem::path CMacChangeList::RelativePath(boost::filesystem::path con
     return Result;
 }
 
-void CMacChangeList::PathChanged(boost::filesystem::path const& Path)
+void file_monitor::mac_monitor::PathChanged(boost::filesystem::path const& Path)
 {
     // TODO: we can use the non-recurive iterator if the event flags say the change wasnt in subdirs
     using Iterator = boost::filesystem::recursive_directory_iterator;
-    auto Log = GetLogger();
 
     for (auto& Entry : boost::make_iterator_range(Iterator(Path), {}))
     {
@@ -133,7 +124,6 @@ void CMacChangeList::PathChanged(boost::filesystem::path const& Path)
         auto& OldHash = mFileHash[Path];
         if (Hash != OldHash)
         {
-            Log->info("File change detected for '{0}'", Path.string());
             mFileHash[Path] = Hash;
             std::lock_guard<std::mutex> Guard(mQueueMutex);
             mChanged.push_back(Path);
@@ -141,14 +131,8 @@ void CMacChangeList::PathChanged(boost::filesystem::path const& Path)
     }
 }
 
-std::shared_ptr<spdlog::logger> CMacChangeList::GetLogger() const
+void file_monitor::mac_monitor::stop()
 {
-    return mLogger;
-}
-
-void CMacChangeList::Stop()
-{
-    GetLogger()->info("Sending stop signal!");
     mKeepRunning = false;
     if (mEventThread.joinable())
     {
@@ -161,24 +145,23 @@ void CMacChangeList::Stop()
     }
 }
 
-CMacChangeList::~CMacChangeList()
+file_monitor::mac_monitor::~mac_monitor()
 {
-    Stop();
+    stop();
 }
 
-CMacChangeList::CMacChangeList(std::shared_ptr<spdlog::logger> Logger)
-    : mLogger(std::move(Logger))
+file_monitor::mac_monitor::mac_monitor()
 {
 
 }
 
-void CMacChangeList::Poll(ChangeEvent const& Consumer)
+void file_monitor::mac_monitor::poll(change_event_t const& consumer)
 {
     std::lock_guard<std::mutex> Lock(mQueueMutex);
 
     if (!mChanged.empty())
     {
-        Consumer(mBasePath, mChanged);
+        consumer(mBasePath, mChanged);
         mChanged.clear();
     }
 }
