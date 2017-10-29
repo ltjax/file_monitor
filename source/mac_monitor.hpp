@@ -17,27 +17,31 @@ public:
     ~mac_monitor() override;
 
     void stop() override;
-    void start(path_t const& path) override;
+    void start(path_t const& where) override;
 
     void poll(change_event_t const& consumer) override;
+
+    static std::uint32_t adler32(std::uint8_t const* data, std::size_t size);
 private:
-    void Run(FSEventStreamRef Stream);
+    void run(FSEventStreamRef stream);
 
-    struct Detail;
+    using hashcode_t = std::uint32_t;
 
-    std::string HashFile(boost::filesystem::path const& Filepath);
-    void PathChanged(boost::filesystem::path const& Path);
-    boost::filesystem::path RelativePath(boost::filesystem::path const& File);
-    void HashFilesIn(boost::filesystem::path const& Root);
+    struct detail;
 
-    boost::filesystem::path mBasePath;
-    std::thread mEventThread;
-    CFRunLoopRef mLoop = nullptr;
-    std::map<boost::filesystem::path, std::string> mFileHash;
+    hashcode_t hash_file(path_t const& filepath);
+    void path_changed(path_t const& where);
+    path_t relative_path(path_t const& File);
+    void hash_files_in(path_t const& root);
 
-    std::mutex mQueueMutex;
-    file_list_t mChanged;
-    std::atomic_bool mKeepRunning{false};
-    CFRunLoopSourceRef mStopSource=nullptr;
+    path_t m_base_path;
+    std::thread m_event_thread;
+    CFRunLoopRef m_run_loop = nullptr;
+    std::map<path_t, hashcode_t> m_file_hash_for;
+
+    std::mutex m_file_list_mutex;
+    file_list_t m_changed;
+    std::atomic_bool m_keep_running{false};
+    CFRunLoopSourceRef m_stop_source=nullptr;
 };
 }

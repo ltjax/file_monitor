@@ -1,153 +1,152 @@
 #include <CoreServices/CoreServices.h>
 #include "mac_monitor.hpp"
 
-struct file_monitor::mac_monitor::Detail
+struct file_monitor::mac_monitor::detail
 {
 
-    static void ChangeEvent(ConstFSEventStreamRef streamRef,
-                            void* clientCallBackInfo,
-                            size_t numEvents,
-                            void* eventPaths,
-                            const FSEventStreamEventFlags eventFlags[],
-                            const FSEventStreamEventId eventIds[])
+    static void change_event(ConstFSEventStreamRef stream,
+                             void* context_info,
+                             size_t event_count,
+                             void* event_data,
+                             FSEventStreamEventFlags const event_flags[],
+                             FSEventStreamEventId const event_ids[])
     {
-        auto that = static_cast<mac_monitor*>(clientCallBackInfo);
-        auto paths = reinterpret_cast<char**>(eventPaths);
+      auto that = static_cast<mac_monitor*>(context_info);
+      auto paths = reinterpret_cast<char**>(event_data);
 
-        for (int i = 0; i < numEvents; i++)
-        {
-            that->PathChanged(paths[i]);
-        }
+      for (int i = 0; i < event_count; i++)
+      {
+        that->path_changed(paths[i]);
+      }
     }
 
-    static void StopSourceSignalled(void*)
+    static void stop_source_signalled(void*)
     {
-        CFRunLoopStop(CFRunLoopGetCurrent());
+      CFRunLoopStop(CFRunLoopGetCurrent());
     }
 
 };
 
-void file_monitor::mac_monitor::start(boost::filesystem::path const& Path)
+void file_monitor::mac_monitor::start(path_t const& where)
 {
-    mKeepRunning = true;
-    this->mBasePath = Path;
-    CFStringRef PathAsStringRef = CFStringCreateWithCString(nullptr, Path.string().c_str(), kCFStringEncodingUTF8);
-    CFArrayRef PathsToWatch = CFArrayCreate(NULL, (const void**) &PathAsStringRef, 1, NULL);
-    CFAbsoluteTime Latency = 1.0; /* Latency in seconds */
-    FSEventStreamContext Context{};
-    Context.info = this;
+  m_keep_running = true;
+  this->m_base_path = where;
 
-    /* Create the stream, passing in a callback */
-    auto Stream = FSEventStreamCreate(NULL, &Detail::ChangeEvent, &Context, PathsToWatch,
-                                      kFSEventStreamEventIdSinceNow, Latency, kFSEventStreamCreateFlagNone);
+  // create a stream for the filesystem events
+  CFStringRef path_string = CFStringCreateWithCString(nullptr, where.string().c_str(), kCFStringEncodingUTF8);
+  CFArrayRef paths = CFArrayCreate(nullptr, (const void**) &path_string, 1, nullptr);
+  CFAbsoluteTime latency = 1.0; // latency in seconds
+  FSEventStreamContext context{};
+  context.info = this;
+  auto Stream = FSEventStreamCreate(nullptr, &detail::change_event, &context, paths,
+                                    kFSEventStreamEventIdSinceNow, latency, kFSEventStreamCreateFlagNone);
 
-    CFRunLoopSourceContext StopSourceContext = {};
-    StopSourceContext.perform = &Detail::StopSourceSignalled;
-    mStopSource = CFRunLoopSourceCreate(NULL, 0, &StopSourceContext);
+  // create a source for the one-shot stop signal
+  CFRunLoopSourceContext stop_source_context = {};
+  stop_source_context.perform = &detail::stop_source_signalled;
+  m_stop_source = CFRunLoopSourceCreate(nullptr, 0, &stop_source_context);
 
-    this->mEventThread = std::thread([this, Stream]()
-                                     {
-                                         Run(Stream);
-                                     });
+  // start the event handling thread
+  this->m_event_thread = std::thread([this, Stream]()
+                                   {
+                                       run(Stream);
+                                   });
 }
 
-void file_monitor::mac_monitor::Run(FSEventStreamRef Stream)
+void file_monitor::mac_monitor::run(FSEventStreamRef stream)
 {
-    this->mLoop = CFRunLoopGetCurrent();
-    this->HashFilesIn(mBasePath);
-    FSEventStreamScheduleWithRunLoop(Stream, mLoop, kCFRunLoopDefaultMode);
-    FSEventStreamStart(Stream);
+  this->m_run_loop = CFRunLoopGetCurrent();
+  this->hash_files_in(m_base_path);
+  FSEventStreamScheduleWithRunLoop(stream, m_run_loop, kCFRunLoopDefaultMode);
+  FSEventStreamStart(stream);
 
-    CFRunLoopAddSource(mLoop, mStopSource, kCFRunLoopDefaultMode);
-    CFRunLoopRun();
+  CFRunLoopAddSource(m_run_loop, m_stop_source, kCFRunLoopDefaultMode);
+  CFRunLoopRun();
 }
 
 
-/*std::string file_monitor::CMacChangeList::HashFile(boost::filesystem::path const& Filepath)
+file_monitor::mac_monitor::hashcode_t file_monitor::mac_monitor::hash_file(path_t const& filepath)
 {
-    boost::iostreams::mapped_file_source File(Filepath.string());
+  boost::iostreams::mapped_file_source mapped_file(filepath.string());
 
-    Keccak Hasher;
-    return Hasher(File.data(), File.size());
-}*/
+  return adler32(reinterpret_cast<std::uint8_t const*>(mapped_file.data()), mapped_file.size());
+}
 
-void file_monitor::mac_monitor::HashFilesIn(boost::filesystem::path const& Root)
+void file_monitor::mac_monitor::hash_files_in(path_t const& root)
 {
-    using Iterator = boost::filesystem::recursive_directory_iterator;
+  using Iterator = boost::filesystem::recursive_directory_iterator;
 
-    for (auto& Entry : boost::make_iterator_range(Iterator(Root), {}))
+  for (auto& each : boost::make_iterator_range(Iterator(root), {}))
+  {
+    if (!m_keep_running)
+      return;
+
+    if (!is_regular_file(each.status()))
+      continue;
+
+    auto Path = relative_path(each.path());
+
+    try
     {
-        if (!mKeepRunning)
-            return;
-
-        if (!is_regular_file(Entry.status()))
-            continue;
-
-        auto Path = RelativePath(Entry.path());
-
-        try
-        {
-            auto Hash = HashFile(Entry.path());
-            mFileHash[Path] = Hash;
-        }
-        catch (std::exception const& Error)
-        {
-          // TODO: log this?
-        }
+      auto Hash = hash_file(each.path());
+      m_file_hash_for[Path] = Hash;
     }
-}
-
-boost::filesystem::path file_monitor::mac_monitor::RelativePath(boost::filesystem::path const& File)
-{
-    boost::filesystem::path Result;
-    auto Prefix = std::distance(mBasePath.begin(), mBasePath.end());
-
-    for (auto Each : boost::make_iterator_range(boost::next(File.begin(), Prefix), File.end()))
-        Result /= Each;
-
-    return Result;
-}
-
-void file_monitor::mac_monitor::PathChanged(boost::filesystem::path const& Path)
-{
-    // TODO: we can use the non-recurive iterator if the event flags say the change wasnt in subdirs
-    using Iterator = boost::filesystem::recursive_directory_iterator;
-
-    for (auto& Entry : boost::make_iterator_range(Iterator(Path), {}))
+    catch (std::exception const& Error)
     {
-        if (!is_regular_file(Entry.status()))
-            continue;
-
-        auto Path = RelativePath(Entry.path());
-
-        auto Hash = HashFile(Entry.path());
-        auto& OldHash = mFileHash[Path];
-        if (Hash != OldHash)
-        {
-            mFileHash[Path] = Hash;
-            std::lock_guard<std::mutex> Guard(mQueueMutex);
-            mChanged.push_back(Path);
-        }
+      // TODO: log this?
     }
+  }
+}
+
+file_monitor::path_t file_monitor::mac_monitor::relative_path(path_t const& file)
+{
+  path_t result;
+  auto prefix = std::distance(m_base_path.begin(), m_base_path.end());
+
+  for (auto each : boost::make_iterator_range(boost::next(file.begin(), prefix), file.end()))
+    result /= each;
+
+  return result;
+}
+
+void file_monitor::mac_monitor::path_changed(path_t const& where)
+{
+  // TODO: we can use the non-recursive iterator if the event flags say the change was not in subdirs
+  using iterator_t = boost::filesystem::recursive_directory_iterator;
+
+  for (auto& each : boost::make_iterator_range(iterator_t(where), {}))
+  {
+    if (!is_regular_file(each.status()))
+      continue;
+
+    auto path = relative_path(each.path());
+
+    auto new_hash = hash_file(each.path());
+    auto const& old_hash = m_file_hash_for[path];
+    if (new_hash != old_hash)
+    {
+      m_file_hash_for[path] = new_hash;
+      std::lock_guard<std::mutex> lock(m_file_list_mutex);
+      m_changed.push_back(path);
+    }
+  }
 }
 
 void file_monitor::mac_monitor::stop()
 {
-    mKeepRunning = false;
-    if (mEventThread.joinable())
-    {
-        CFRunLoopSourceSignal(mStopSource);
-        CFRunLoopWakeUp(mLoop);
+  m_keep_running = false;
+  if (m_event_thread.joinable())
+  {
+    CFRunLoopSourceSignal(m_stop_source);
+    CFRunLoopWakeUp(m_run_loop);
 
-        // NOTE: Race condition if we're past the last keepRunning State and not in the run loop yet
-        //CFRunLoopStop(mLoop);
-        mEventThread.join();
-    }
+    m_event_thread.join();
+  }
 }
 
 file_monitor::mac_monitor::~mac_monitor()
 {
-    stop();
+  stop();
 }
 
 file_monitor::mac_monitor::mac_monitor()
@@ -157,11 +156,26 @@ file_monitor::mac_monitor::mac_monitor()
 
 void file_monitor::mac_monitor::poll(change_event_t const& consumer)
 {
-    std::lock_guard<std::mutex> Lock(mQueueMutex);
+  std::lock_guard<std::mutex> guard(m_file_list_mutex);
 
-    if (!mChanged.empty())
-    {
-        consumer(mBasePath, mChanged);
-        mChanged.clear();
-    }
+  if (!m_changed.empty())
+  {
+    consumer(m_base_path, m_changed);
+    m_changed.clear();
+  }
+}
+
+std::uint32_t file_monitor::mac_monitor::adler32(std::uint8_t const* data, std::size_t size)
+{
+  std::uint32_t ADLER_PRIME = 65521;
+  std::uint32_t a = 1;
+  std::uint32_t b = 0;
+
+  for (std::size_t i = 0; i < size; ++i)
+  {
+    a = (a + data[i]) % ADLER_PRIME;
+    b = (b + a) % ADLER_PRIME;
+  }
+
+  return (b << 16) | a;
 }
