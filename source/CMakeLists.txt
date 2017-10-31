@@ -1,13 +1,29 @@
 
 set(TARGET_NAME file_monitor)
-add_library(${TARGET_NAME}
+
+# For all platforms
+set(SOURCE_LIST
   monitor.cpp
   monitor.hpp
   factory.cpp
-  factory.hpp
-  mac_monitor.cpp
-  mac_monitor.hpp)
+  factory.hpp)
+	
+# Windows specific files
+if(FILE_MONITOR_PLATFORM STREQUAL PLATFORM_WIN32)
+	list(APPEND SOURCE_LIST
+		win_monitor.cpp
+		win_monitor.hpp)
+endif()
 
+# Mac OS X specific files
+if(FILE_MONITOR_PLATFORM STREQUAL PLATFORM_MACOS)
+	list(APPEND SOURCE_LIST
+		mac_monitor.cpp
+		mac_monitor.hpp)
+endif()
+
+add_library(${TARGET_NAME}
+  ${SOURCE_LIST})
 
 target_include_directories(${TARGET_NAME}
   PUBLIC ${Boost_INCLUDE_DIRS})
