@@ -66,39 +66,40 @@ void win_monitor::poll(change_event_t const& consumer)
         }
     }
 
-    DWORD BytesWritten = 0;
-    BOOL Result = GetOverlappedResult(m_notify_event, &m_overlapped_io, &BytesWritten, FALSE);
+    DWORD bytes_written = 0;
+    BOOL result = GetOverlappedResult(m_notify_event, &m_overlapped_io, &bytes_written, FALSE);
 
     // No results yet?
-    if (Result == FALSE)
+    if (result == FALSE)
     {
         assert(GetLastError() == ERROR_IO_INCOMPLETE);
         return;
     }
 
     // We got something
-    const char* CurrentEntry = m_result_buffer.data();
+    const char* current_entry = m_result_buffer.data();
     // TODO: return buffer size literals here
-    char Filename[256];
+    char filename_buffer[256];
     while (true)
     {
-        const FILE_NOTIFY_INFORMATION* FileInfo = reinterpret_cast<const FILE_NOTIFY_INFORMATION*>(CurrentEntry);
+        // FIXME: is this a well-defined reinterpret?
+        auto file_info = reinterpret_cast<FILE_NOTIFY_INFORMATION const*>(current_entry);
 
-        if (FileInfo->Action == FILE_ACTION_MODIFIED || FileInfo->Action == FILE_ACTION_RENAMED_NEW_NAME)
+        if (file_info->Action == FILE_ACTION_MODIFIED || file_info->Action == FILE_ACTION_RENAMED_NEW_NAME)
         {
             size_t converted_count = 0;
             // Convert to ASCII
-            wcstombs_s(&converted_count, Filename, FileInfo->FileNameLength, FileInfo->FileName, 256);
-            Filename[std::min<DWORD>(FileInfo->FileNameLength / 2, 255)] = 0;
+            wcstombs_s(&converted_count, filename_buffer, file_info->FileNameLength, file_info->FileName, 256);
+            filename_buffer[std::min<DWORD>(file_info->FileNameLength / 2, 255)] = 0;
 
-            add_path(Filename);
+            add_path(filename_buffer);
         }
 
         // If there's another one, go there
-        if (FileInfo->NextEntryOffset == 0)
+        if (file_info->NextEntryOffset == 0)
             break;
 
-        CurrentEntry += FileInfo->NextEntryOffset;
+        current_entry += file_info->NextEntryOffset;
     }
 
     // TODO: do something with the bool result
@@ -107,13 +108,13 @@ void win_monitor::poll(change_event_t const& consumer)
 
 bool file_monitor::win_monitor::listen()
 {
-    DWORD Unused = 0;
+    DWORD unused = 0;
 
-    BOOL Result = ReadDirectoryChangesW(m_directory_handle, m_result_buffer.data(), m_result_buffer.size(), TRUE,
-        FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_FILE_NAME, &Unused,
+    BOOL result = ReadDirectoryChangesW(m_directory_handle, m_result_buffer.data(), m_result_buffer.size(), TRUE,
+        FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_FILE_NAME, &unused,
         &m_overlapped_io, NULL);
 
-    if (Result == 0)
+    if (result == 0)
     {
         LPVOID buffer;
 
@@ -127,23 +128,23 @@ bool file_monitor::win_monitor::listen()
         LocalFree(buffer);
     }
 
-    return (Result != 0);
+    return (result != 0);
 }
 
-void win_monitor::add_path(char const * filename)
+void win_monitor::add_path(char const* filename)
 {
-    path_t Path(filename);
+    path_t path(filename);
 
-    auto& Vector(m_files_changed);
+    auto& list(m_files_changed);
 
-    if (std::find(Vector.begin(), Vector.end(), Path) == Vector.end())
+    if (std::find(list.begin(), list.end(), path) != list.end())
+        return;
+
+    list.push_back(std::move(path));
+
+    if (!m_countdown_started)
     {
-        Vector.push_back(Path);
-
-        if (!m_countdown_started)
-        {
-            m_countdown_started = true;
-            m_countdown_time = clock_t::now();
-        }
+        m_countdown_started = true;
+        m_countdown_time = clock_t::now();
     }
 }
