@@ -27,3 +27,6 @@ add_library(${TARGET_NAME}
 
 target_include_directories(${TARGET_NAME}
   PUBLIC ${Boost_INCLUDE_DIRS})
+
+target_compile_definitions(${TARGET_NAME}
+	PRIVATE "-DFILE_MONITOR_${FILE_MONITOR_PLATFORM}")
