@@ -10,17 +10,17 @@ auto const RESULT_BUFFER_SIZE = 4096;
 
 win_monitor::win_monitor()
 {
-    this->mResultBuffer.resize(RESULT_BUFFER_SIZE);
-    this->CountdownLength = std::chrono::milliseconds(500);
+    m_result_buffer.resize(RESULT_BUFFER_SIZE);
+    m_countdown_length = std::chrono::milliseconds(500);
 }
 
 win_monitor::~win_monitor()
 {
-    if (this->DirectoryHandle != INVALID_HANDLE_VALUE)
-        CloseHandle(this->DirectoryHandle);
+    if (m_directory_handle != INVALID_HANDLE_VALUE)
+        CloseHandle(m_directory_handle);
 
-    if (this->NotifyEvent != nullptr)
-        CloseHandle(this->NotifyEvent);
+    if (m_notify_event != nullptr)
+        CloseHandle(m_notify_event);
 }
 
 void win_monitor::stop()
@@ -29,45 +29,45 @@ void win_monitor::stop()
 
 void win_monitor::start(path_t const & base_path)
 {
-    if (DirectoryHandle != INVALID_HANDLE_VALUE)
+    if (m_directory_handle != INVALID_HANDLE_VALUE)
         throw std::runtime_error("FileMonitor already started.");
     
-    this->BasePath = base_path;
+    m_base_path = base_path;
 
     // Get a handle for the directory to watch
-    this->DirectoryHandle =
+    m_directory_handle =
         CreateFile(base_path.string().c_str(), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,
             NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL);
 
     // Create an event for the polling
-    this->NotifyEvent = CreateEvent(NULL, FALSE, FALSE, "FileChangedEvent");
+    m_notify_event = CreateEvent(NULL, FALSE, FALSE, "FileChangedEvent");
 
-    if (this->NotifyEvent == nullptr)
+    if (m_notify_event == nullptr)
         throw std::runtime_error("FileMonitor failed to create event.");
 
-    this->OverlappedIO.hEvent = this->NotifyEvent;
+    m_overlapped_io.hEvent = m_notify_event;
 
     // TODO: do something with the return value
-    this->listen();
+    listen();
 }
 
 void win_monitor::poll(change_event_t const& consumer)
 {
-    if (this->CountdownStarted)
+    if (m_countdown_started)
     {
         // calculate the time the timer has been running for
-        auto Time = clock_t::now() - this->CountdownTime;
+        auto Time = clock_t::now() - m_countdown_time;
 
-        if (Time > this->CountdownLength)
+        if (Time > m_countdown_length)
         {
-            consumer(this->BasePath, this->FilesChanged);
-            this->CountdownStarted = false;
-            this->FilesChanged.clear();
+            consumer(m_base_path, m_files_changed);
+            m_countdown_started = false;
+            m_files_changed.clear();
         }
     }
 
     DWORD BytesWritten = 0;
-    BOOL Result = GetOverlappedResult(this->NotifyEvent, &this->OverlappedIO, &BytesWritten, FALSE);
+    BOOL Result = GetOverlappedResult(m_notify_event, &m_overlapped_io, &BytesWritten, FALSE);
 
     // No results yet?
     if (Result == FALSE)
@@ -77,7 +77,7 @@ void win_monitor::poll(change_event_t const& consumer)
     }
 
     // We got something
-    const char* CurrentEntry = mResultBuffer.data();
+    const char* CurrentEntry = m_result_buffer.data();
     // TODO: return buffer size literals here
     char Filename[256];
     while (true)
@@ -109,9 +109,9 @@ bool file_monitor::win_monitor::listen()
 {
     DWORD Unused = 0;
 
-    BOOL Result = ReadDirectoryChangesW(this->DirectoryHandle, this->mResultBuffer.data(), this->mResultBuffer.size(), TRUE,
+    BOOL Result = ReadDirectoryChangesW(m_directory_handle, m_result_buffer.data(), m_result_buffer.size(), TRUE,
         FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_FILE_NAME, &Unused,
-        &this->OverlappedIO, NULL);
+        &m_overlapped_io, NULL);
 
     if (Result == 0)
     {
@@ -134,16 +134,16 @@ void win_monitor::add_path(char const * filename)
 {
     path_t Path(filename);
 
-    auto& Vector(this->FilesChanged);
+    auto& Vector(m_files_changed);
 
     if (std::find(Vector.begin(), Vector.end(), Path) == Vector.end())
     {
         Vector.push_back(Path);
 
-        if (!this->CountdownStarted)
+        if (!m_countdown_started)
         {
-            this->CountdownStarted = true;
-            this->CountdownTime = clock_t::now();
+            m_countdown_started = true;
+            m_countdown_time = clock_t::now();
         }
     }
 }

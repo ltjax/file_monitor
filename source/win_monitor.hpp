@@ -28,16 +28,16 @@ private:
     void add_path(char const* filename);
 
     using clock_t = std::chrono::high_resolution_clock;
-    std::vector<char> mResultBuffer;
-    HANDLE DirectoryHandle= INVALID_HANDLE_VALUE;
-    HANDLE NotifyEvent = nullptr;
-    OVERLAPPED OverlappedIO = {};
+    std::vector<char> m_result_buffer;
+    HANDLE m_directory_handle= INVALID_HANDLE_VALUE;
+    HANDLE m_notify_event = nullptr;
+    OVERLAPPED m_overlapped_io = {};
 
-    bool CountdownStarted = false;
-    clock_t::time_point CountdownTime;
-    clock_t::duration CountdownLength;
-    path_t BasePath;
+    bool m_countdown_started = false;
+    clock_t::time_point m_countdown_time;
+    clock_t::duration m_countdown_length;
+    path_t m_base_path;
 
-    std::vector<path_t> FilesChanged;
+    std::vector<path_t> m_files_changed;
 };
 }
