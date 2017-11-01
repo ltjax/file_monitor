@@ -22,6 +22,13 @@ if(FILE_MONITOR_PLATFORM STREQUAL PLATFORM_MACOS)
 		mac_monitor.hpp)
 endif()
 
+# Linux specific files
+if(FILE_MONITOR_PLATFORM STREQUAL PLATFORM_LINUX)
+        list(APPEND SOURCE_LIST
+                linux_monitor.cpp
+                linux_monitor.hpp)
+endif()
+
 add_library(${TARGET_NAME}
   ${SOURCE_LIST})
 
