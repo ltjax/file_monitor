@@ -15,16 +15,21 @@ public:
   void poll(const change_event_t& consumer) override;
 
 private:
-  // \invariant - we need to have a valid inotify instance
-  int m_inotify_instance = -1;
-
   struct watch_t
   {
-    int watch_id = -1;
+    int id;
     path_t base_path;
-    std::vector<watch_t> sub_watches;
   };
 
-  watch_t m_base_watch;
+  // \invariant - we need to have a valid inotify instance
+  void process_events(change_event_t const&);
+  void create_watches(path_t const& root);
+  watch_t const& find_watch(int id) const;
+
+  int m_inotify_instance = -1;
+  int m_base_watch_id = -1;
+  path_t m_base_path;
+
+  std::vector<watch_t> m_watches;
 };
 }
