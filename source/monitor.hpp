@@ -8,11 +8,12 @@ namespace file_monitor
 {
 
 using path_t = boost::filesystem::path;
+using file_list_t = std::vector<boost::filesystem::path>;
 
 class monitor
 {
 public:
-    using file_list_t = std::vector<boost::filesystem::path>;
+
     using change_event_t = std::function<void(path_t const& base_path, file_list_t const& files)>;
 
     monitor();
