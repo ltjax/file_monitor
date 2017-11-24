@@ -4,7 +4,10 @@
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #endif
+
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/utility.hpp>
