@@ -33,3 +33,6 @@ Note that the monitor will only detect changes on files that existed when it was
 
 ## Platform support
 The file monitor works on Windows, Linux and Mac OS X. It can be built with VC++ 2017, and recent g++ and clang versions. It requires C++14.
+
+## Integration
+Currently, the recommended way to integrate the file monitor is to drop it into your source folder and use CMake's `add_subdirectory()`. Installation and packaging is a work-in-progress.
