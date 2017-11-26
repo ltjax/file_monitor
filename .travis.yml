@@ -27,13 +27,11 @@ install:
     fi
 
 script:
-  # Link gcc-6 and g++-6 to their standard commands
-  - ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
-  - ln -s /usr/bin/g++-6 /usr/local/bin/g++
   # Export CC and CXX to tell cmake which compiler to use
   - export CC=/usr/bin/gcc-6
   - export CXX=/usr/bin/g++-6
   # Check versions of gcc, g++ and cmake
   - ${CC} -v && ${CXX} -v && cmake --version
   # Run your build commands nex
-  - mkdir build && cd build && cmake ../ && cmake --build .
+  - BUILD_DIR="${TRAVIS_BUILD_DIR}/build"
+  - mkdir ${BUILD_DIR} && cd ${BUILD_DIR} && cmake ../ && cmake --build .
