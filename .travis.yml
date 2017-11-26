@@ -22,4 +22,4 @@ script:
   # Check versions of gcc, g++ and cmake
   - gcc -v && g++ -v && cmake --version
   # Run your build commands nex
-  - cmake --build
+  - mkdir build && cd build && cmake ../ltjax/file_monitor && cmake --build .
