@@ -19,11 +19,15 @@ install:
   - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
   - |
     if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-      CMAKE_URL="https://cmake.org/files/v3.4/cmake-3.4.3.tar.gz"
-      mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
-      export PATH=${DEPS_DIR}/cmake/bin:${PATH}
-    elif [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then
-      which cmake || brew install cmake
+      mkdir -p $HOME/.local
+      CMAKE_URL="http://cmake.org/files/v3.9/cmake-3.9.0-Linux-x86_64.tar.gz"
+      if [ ! -e $HOME/.local/bin/cmake ]; then
+          echo "CMake not found in the cache, get and extract it..."
+          travis_retry curl -L ${CMAKE_URL} \
+              | tar -xz -C $HOME/.local --strip-components=1
+      else
+          echo "Using cached CMake"
+      fi
     fi
 
 script:
