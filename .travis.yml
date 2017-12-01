@@ -1,0 +1,42 @@
+dist: trusty
+sudo: required
+language:
+  - cpp
+compiler:
+  - gcc
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-6
+      - g++-6
+      - cmake
+      - libboost-filesystem-dev
+      
+
+install:
+  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+  - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
+  - |
+    if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+      mkdir -p $HOME/.local
+      CMAKE_URL="http://cmake.org/files/v3.9/cmake-3.9.0-Linux-x86_64.tar.gz"
+      if [ ! -e $HOME/.local/bin/cmake ]; then
+          echo "CMake not found in the cache, get and extract it..."
+          travis_retry curl -L ${CMAKE_URL} \
+              | tar -xz -C $HOME/.local --strip-components=1
+      else
+          echo "Using cached CMake"
+      fi
+    fi
+
+script:
+  # Export CC and CXX to tell cmake which compiler to use
+  - export CC=/usr/bin/gcc-6
+  - export CXX=/usr/bin/g++-6
+  # Check versions of gcc, g++ and cmake
+  - ${CC} -v && ${CXX} -v && cmake --version
+  # Run your build commands nex
+  - BUILD_DIR="${TRAVIS_BUILD_DIR}/build"
+  - mkdir ${BUILD_DIR} && cd ${BUILD_DIR} && cmake ../ && cmake --build .
