@@ -1,7 +1,7 @@
 #include "win_monitor.hpp"
+#include <array>
 
 using namespace file_monitor;
-#include "win_monitor.hpp"
 
 namespace
 {
@@ -27,17 +27,17 @@ void win_monitor::stop()
 {
 }
 
-void win_monitor::start(path_t const & base_path)
+void win_monitor::start(path_t const& base_path)
 {
     if (m_directory_handle != INVALID_HANDLE_VALUE)
         throw std::runtime_error("FileMonitor already started.");
-    
+
     m_base_path = base_path;
 
     // Get a handle for the directory to watch
-    m_directory_handle =
-        CreateFile(base_path.string().c_str(), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,
-            NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL);
+    m_directory_handle = CreateFile(base_path.string().c_str(), FILE_LIST_DIRECTORY,
+                                    FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+                                    FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, NULL);
 
     // Create an event for the polling
     m_notify_event = CreateEvent(NULL, FALSE, FALSE, "FileChangedEvent");
@@ -79,7 +79,7 @@ void win_monitor::poll(change_event_t const& consumer)
     // We got something
     const char* current_entry = m_result_buffer.data();
     // TODO: return buffer size literals here
-    char filename_buffer[256];
+    std::array<char, 256> filename_buffer;
     while (true)
     {
         // FIXME: is this a well-defined reinterpret?
@@ -88,11 +88,16 @@ void win_monitor::poll(change_event_t const& consumer)
         if (file_info->Action == FILE_ACTION_MODIFIED || file_info->Action == FILE_ACTION_RENAMED_NEW_NAME)
         {
             size_t converted_count = 0;
-            // Convert to ASCII
-            wcstombs_s(&converted_count, filename_buffer, file_info->FileNameLength, file_info->FileName, 256);
-            filename_buffer[std::min<DWORD>(file_info->FileNameLength / 2, 255)] = 0;
 
-            add_path(filename_buffer);
+            // Convert to ASCII
+            if (wcstombs_s(&converted_count, filename_buffer.data(), filename_buffer.size(), file_info->FileName,
+                           filename_buffer.size() - 1) != 0)
+            {
+                // Just ignore in case of an error
+                continue;
+            }
+
+            add_path(filename_buffer.data());
         }
 
         // If there's another one, go there
@@ -111,8 +116,8 @@ bool file_monitor::win_monitor::listen()
     DWORD unused = 0;
 
     BOOL result = ReadDirectoryChangesW(m_directory_handle, m_result_buffer.data(), m_result_buffer.size(), TRUE,
-        FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_FILE_NAME, &unused,
-        &m_overlapped_io, NULL);
+                                        FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_FILE_NAME, &unused,
+                                        &m_overlapped_io, NULL);
 
     if (result == 0)
     {
@@ -120,7 +125,7 @@ bool file_monitor::win_monitor::listen()
 
         // TODO: remove printf
         if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-            NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buffer, 0, NULL))
+                          NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buffer, 0, NULL))
             printf("ReadDirectoryChangesW failed with '%s'\n", (const char*)buffer);
         else
             printf("Couldn't format error msg for ReadDirectoryChangesW failure.\n");
