@@ -19,7 +19,9 @@ std::shared_ptr<file_monitor::monitor> file_monitor::make_monitor()
     return std::make_shared<mac_monitor>();
 #elif defined(FILE_MONITOR_PLATFORM_WIN32)
     return std::make_shared<win_monitor>();
-#else
+#elif defined(FILE_MONITOR_PLATFORM_LINUX)
     return std::make_shared<linux_monitor>();
+#else
+#error No supported platform defined
 #endif
 }
