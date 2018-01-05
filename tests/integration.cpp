@@ -42,3 +42,4 @@ TEST_CASE("in temporary folder")
         REQUIRE(triggered);
     }
 }
+
