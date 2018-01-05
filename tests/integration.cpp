@@ -3,6 +3,8 @@
 #include <catch.hpp>
 #include <file_monitor/factory.hpp>
 
+using namespace Catch::Matchers;
+
 namespace {
 
 void set_file_content(file_monitor::path_t const& path, std::string content)
@@ -34,8 +36,7 @@ TEST_CASE("in temporary folder")
 
         bool triggered = false;
         monitor->poll([&](auto const& base, auto const& files) {
-            auto found = std::find(files.begin(), files.end(), filename);
-            REQUIRE(found != files.end());
+            REQUIRE_THAT(files, VectorContains(filename));
             triggered = true;
         });
         REQUIRE(triggered);
