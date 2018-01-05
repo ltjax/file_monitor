@@ -21,3 +21,6 @@ find_package(Boost REQUIRED)
 
 # Go for the library
 add_subdirectory(source)
+
+# Go for the tests
+add_subdirectory(tests)
