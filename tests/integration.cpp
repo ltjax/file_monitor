@@ -8,3 +8,4 @@ TEST_CASE("can create monitor")
     auto monitor = file_monitor::make_monitor();
     REQUIRE(monitor != nullptr);
 }
+

@@ -17,7 +17,7 @@ endif()
 # TODO: Need to verify that requiring COMPONENTS works for all platforms
 #       and all targeted boost releases. Currently, there seems to be some
 #       trouble requiring components on OSX.
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED COMPONENTS filesystem)
 
 # Go for the library
 add_subdirectory(source)
