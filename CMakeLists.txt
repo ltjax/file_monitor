@@ -3,24 +3,31 @@ project(file_monitor)
 
 set(CMAKE_CXX_STANDARD 14)
 
+option(file_monitor_BUILD_TESTS "Build tests" ON)
+
 # Canonize platform selection
-set(FILE_MONITOR_PLATFORM Undefined)
+set(file_monitor_PLATFORM Undefined)
 if(WIN32)
-  set(FILE_MONITOR_PLATFORM PLATFORM_WIN32)
+  set(file_monitor_PLATFORM PLATFORM_WIN32)
 elseif(APPLE)
-  set(FILE_MONITOR_PLATFORM PLATFORM_MACOS)
+  set(file_monitor_PLATFORM PLATFORM_MACOS)
 elseif(UNIX AND NOT APPLE)
-  set(FILE_MONITOR_PLATFORM PLATFORM_LINUX)
+  set(file_monitor_PLATFORM PLATFORM_LINUX)
 endif()
+
 
 # Dependencies
 # TODO: Need to verify that requiring COMPONENTS works for all platforms
 #       and all targeted boost releases. Currently, there seems to be some
 #       trouble requiring components on OSX.
-find_package(Boost REQUIRED COMPONENTS filesystem)
+if(NOT Boost_FOUND)
+  find_package(Boost REQUIRED COMPONENTS filesystem)
+endif()
 
 # Go for the library
 add_subdirectory(source)
 
-# Go for the tests
-add_subdirectory(tests)
+if(file_monitor_BUILD_TESTS)
+  # Go for the tests
+  add_subdirectory(tests)
+endif()

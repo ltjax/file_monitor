@@ -2,6 +2,7 @@
 #include <boost/filesystem/fstream.hpp>
 #include <catch.hpp>
 #include <file_monitor/factory.hpp>
+#include <thread>
 
 using namespace Catch::Matchers;
 
@@ -34,11 +35,20 @@ TEST_CASE("in temporary folder")
         monitor->start(folder);
         set_file_content(path, "after");
 
+        // HACK: See Issue #14
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
         bool triggered = false;
-        monitor->poll([&](auto const& base, auto const& files) {
+        auto handler = [&](auto const& base, auto const& files) {
             REQUIRE_THAT(files, VectorContains(filename));
             triggered = true;
-        });
+        };
+
+        // HACK: See Issue #14 - once that is fixed, only call once and without sleep
+        monitor->poll(handler);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        monitor->poll(handler);
+
         REQUIRE(triggered);
     }
 }
