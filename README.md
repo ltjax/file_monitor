@@ -28,7 +28,7 @@ while (keep_running)
   {
     // base_path is the path that the monitor was started in
     // files is a std::vector of files that have changed
-  }
+  });
 }
 ```
 
