@@ -11,8 +11,8 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/utility.hpp>
-#include <windows.h>
 #include <chrono>
+#include <windows.h>
 
 namespace file_monitor
 {
@@ -26,13 +26,14 @@ public:
     void stop() override;
     void start(path_t const& base_path) override;
     void poll(change_event_t const& consumer) override;
+
 private:
     bool listen();
-    void add_path(char const* filename);
+    void add_path(path_t new_filename);
 
     using clock_t = std::chrono::high_resolution_clock;
     std::vector<char> m_result_buffer;
-    HANDLE m_directory_handle= INVALID_HANDLE_VALUE;
+    HANDLE m_directory_handle = INVALID_HANDLE_VALUE;
     HANDLE m_notify_event = nullptr;
     OVERLAPPED m_overlapped_io = {};
 

@@ -78,8 +78,6 @@ void win_monitor::poll(change_event_t const& consumer)
 
     // We got something
     const char* current_entry = m_result_buffer.data();
-    // TODO: return buffer size literals here
-    std::array<char, 256> filename_buffer;
     while (true)
     {
         // FIXME: is this a well-defined reinterpret?
@@ -87,17 +85,9 @@ void win_monitor::poll(change_event_t const& consumer)
 
         if (file_info->Action == FILE_ACTION_MODIFIED || file_info->Action == FILE_ACTION_RENAMED_NEW_NAME)
         {
-            size_t converted_count = 0;
-
-            // Convert to ASCII
-            if (wcstombs_s(&converted_count, filename_buffer.data(), filename_buffer.size(), file_info->FileName,
-                           filename_buffer.size() - 1) != 0)
-            {
-                // Just ignore in case of an error
-                continue;
-            }
-
-            add_path(filename_buffer.data());
+            // Note that FileName uses 16-bit chars, while the FileNameLength is in bytes!
+            auto character_count = file_info->FileNameLength / 2;
+            add_path({ file_info->FileName, file_info->FileName + character_count });
         }
 
         // If there's another one, go there
@@ -136,16 +126,14 @@ bool file_monitor::win_monitor::listen()
     return (result != 0);
 }
 
-void win_monitor::add_path(char const* filename)
+void win_monitor::add_path(path_t new_filename)
 {
-    path_t path(filename);
-
     auto& list(m_files_changed);
 
-    if (std::find(list.begin(), list.end(), path) != list.end())
+    if (std::find(list.begin(), list.end(), new_filename) != list.end())
         return;
 
-    list.push_back(std::move(path));
+    list.push_back(std::move(new_filename));
 
     if (!m_countdown_started)
     {
