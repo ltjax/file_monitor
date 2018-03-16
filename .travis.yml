@@ -9,7 +9,7 @@ before_install:
 script:
   - docker exec build apt-get update > /dev/null
   - docker exec build apt-get dist-upgrade -y > /dev/null
-  - docker exec build apt-get update && apt-get install git build-essential cmake libboost-filesystem-dev -y > /dev/null
+  - docker exec build apt-get install git build-essential cmake libboost-filesystem-dev -y > /dev/null
   - docker exec build git clone https://github.com/ltjax/file_monitor.git /source
   - docker exec build cmake -DCMAKE_BUILD_TYPE=Release -B/build -H/source
   - docker exec build cmake --build /build
