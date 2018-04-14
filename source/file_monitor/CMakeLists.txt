@@ -5,6 +5,8 @@ set(TARGET_NAME file_monitor)
 set(SOURCE_LIST
   monitor.cpp
   monitor.hpp
+  debouncer.cpp
+  debouncer.hpp
   factory.cpp
   factory.hpp)
   
