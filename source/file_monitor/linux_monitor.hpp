@@ -10,6 +10,7 @@ public:
   linux_monitor();
   ~linux_monitor() override;
 
+  path_t base_path() const override;
   void stop() override;
   void start(const path_t& base_path) override;
   void poll(const change_event_t& consumer) override;

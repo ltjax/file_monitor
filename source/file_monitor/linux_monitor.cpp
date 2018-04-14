@@ -95,7 +95,7 @@ void linux_monitor::process_events(monitor::change_event_t const& consumer)
     
     if(bytes_read <= 0)
     {
-      consumer(m_base_path, changed_files);
+      consumer(changed_files);
       break;
     }
     
@@ -177,4 +177,9 @@ linux_monitor::watch_t const& linux_monitor::find_watch(int id) const
   );
   assert(watch != m_watches.cend());
   return *watch;
+}
+
+path_t linux_monitor::base_path() const
+{
+  return m_base_path;
 }
