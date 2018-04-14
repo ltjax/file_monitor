@@ -8,7 +8,7 @@ namespace file_monitor
 {
 
 using path_t = boost::filesystem::path;
-using file_list_t = std::vector<boost::filesystem::path>;
+using file_list_t = std::vector<path_t>;
 
 class monitor
 {

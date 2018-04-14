@@ -11,7 +11,6 @@ auto const RESULT_BUFFER_SIZE = 4096;
 win_monitor::win_monitor()
 {
     m_result_buffer.resize(RESULT_BUFFER_SIZE);
-    m_countdown_length = std::chrono::milliseconds(500);
 }
 
 win_monitor::~win_monitor()
@@ -52,25 +51,11 @@ void win_monitor::start(path_t const& base_path)
 
     m_overlapped_io.hEvent = m_notify_event;
 
-    // TODO: do something with the return value
     listen();
 }
 
 void win_monitor::poll(change_event_t const& consumer)
 {
-    if (m_countdown_started)
-    {
-        // calculate the time the timer has been running for
-        auto Time = clock_t::now() - m_countdown_time;
-
-        if (Time > m_countdown_length)
-        {
-            consumer(m_files_changed);
-            m_countdown_started = false;
-            m_files_changed.clear();
-        }
-    }
-
     DWORD bytes_written = 0;
     BOOL result = GetOverlappedResult(m_notify_event, &m_overlapped_io, &bytes_written, FALSE);
 
@@ -82,17 +67,18 @@ void win_monitor::poll(change_event_t const& consumer)
     }
 
     // We got something
+    m_files_changed.clear();
+
     const char* current_entry = m_result_buffer.data();
     while (true)
     {
-        // FIXME: is this a well-defined reinterpret?
         auto file_info = reinterpret_cast<FILE_NOTIFY_INFORMATION const*>(current_entry);
 
         if (file_info->Action == FILE_ACTION_MODIFIED || file_info->Action == FILE_ACTION_RENAMED_NEW_NAME)
         {
             // Note that FileName uses 16-bit chars, while the FileNameLength is in bytes!
             auto character_count = file_info->FileNameLength / 2;
-            add_path({ file_info->FileName, file_info->FileName + character_count });
+            m_files_changed.push_back({ file_info->FileName, file_info->FileName + character_count });
         }
 
         // If there's another one, go there
@@ -102,11 +88,12 @@ void win_monitor::poll(change_event_t const& consumer)
         current_entry += file_info->NextEntryOffset;
     }
 
-    // TODO: do something with the bool result
+    consumer(m_files_changed);
+
     listen();
 }
 
-bool file_monitor::win_monitor::listen()
+void file_monitor::win_monitor::listen()
 {
     DWORD unused = 0;
 
@@ -118,31 +105,15 @@ bool file_monitor::win_monitor::listen()
     {
         LPVOID buffer;
 
-        // TODO: remove printf
-        if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                          NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buffer, 0, NULL))
-            printf("ReadDirectoryChangesW failed with '%s'\n", (const char*)buffer);
-        else
-            printf("Couldn't format error msg for ReadDirectoryChangesW failure.\n");
+        if (!FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buffer, 0, NULL))
+        {
+            throw std::runtime_error("Could not format error message for ReadDirectoryChangesW failure");
+        }
 
+        auto message = std::string((const char*)buffer);
         LocalFree(buffer);
-    }
 
-    return (result != 0);
-}
-
-void win_monitor::add_path(path_t new_filename)
-{
-    auto& list(m_files_changed);
-
-    if (std::find(list.begin(), list.end(), new_filename) != list.end())
-        return;
-
-    list.push_back(std::move(new_filename));
-
-    if (!m_countdown_started)
-    {
-        m_countdown_started = true;
-        m_countdown_time = clock_t::now();
+        throw std::runtime_error("ReadDirectoryChangesW failed with " + std::string((const char*)buffer));
     }
 }

@@ -21,7 +21,6 @@ void debouncer::start(path_t const& base_path)
 {
     m_countdown_started = false;
     m_decorated->start(base_path);
-    
 }
 
 path_t debouncer::base_path() const
