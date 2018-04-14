@@ -25,6 +25,7 @@ public:
     // Inherited via monitor
     void stop() override;
     void start(path_t const& base_path) override;
+    path_t base_path() const override;
     void poll(change_event_t const& consumer) override;
 
 private:

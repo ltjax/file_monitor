@@ -27,6 +27,11 @@ void win_monitor::stop()
 {
 }
 
+path_t win_monitor::base_path() const
+{
+    return m_base_path;
+}
+
 void win_monitor::start(path_t const& base_path)
 {
     if (m_directory_handle != INVALID_HANDLE_VALUE)
@@ -60,7 +65,7 @@ void win_monitor::poll(change_event_t const& consumer)
 
         if (Time > m_countdown_length)
         {
-            consumer(m_base_path, m_files_changed);
+            consumer(m_files_changed);
             m_countdown_started = false;
             m_files_changed.clear();
         }

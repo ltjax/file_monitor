@@ -39,7 +39,7 @@ TEST_CASE("in temporary folder")
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
         bool triggered = false;
-        auto handler = [&](auto const& base, auto const& files) {
+        auto handler = [&](auto const& files) {
             REQUIRE_THAT(files, VectorContains(filename));
             triggered = true;
         };
