@@ -6,44 +6,42 @@
 
 using namespace Catch::Matchers;
 
-namespace {
-
+namespace
+{
 void set_file_content(file_monitor::path_t const& path, std::string content)
 {
-    boost::filesystem::ofstream file(path, std::ios::binary | std::ios::trunc);
-    file << content;        
+  boost::filesystem::ofstream file(path, std::ios::binary | std::ios::trunc);
+  file << content;
 }
-
 }
 
 TEST_CASE("can create monitor")
 {
-    auto monitor = file_monitor::make_monitor();
-    REQUIRE(monitor != nullptr);
+  auto monitor = file_monitor::make_monitor();
+  REQUIRE(monitor != nullptr);
 }
 
 TEST_CASE("in temporary folder")
 {
-    scoped_temp_folder folder("file_monitor_test");
-    auto monitor = file_monitor::make_platform_monitor();
+  scoped_temp_folder folder("file_monitor_test");
+  auto monitor = file_monitor::make_platform_monitor();
 
-    SECTION("detects single change")
-    {
-        auto filename = file_monitor::path_t("test.file");
-        auto path = folder.get() / filename;
-        set_file_content(path, "before");
-        monitor->start(folder);
-        set_file_content(path, "after");
-        
-        bool triggered = false;
-        auto handler = [&](auto const& files) {
-            REQUIRE_THAT(files, VectorContains(filename));
-            triggered = true;
-        };
+  SECTION("detects single change")
+  {
+    auto filename = file_monitor::path_t("test.file");
+    auto path = folder.get() / filename;
+    set_file_content(path, "before");
+    monitor->start(folder);
+    set_file_content(path, "after");
 
-        monitor->poll(handler);
+    bool triggered = false;
+    auto handler = [&](auto const& files) {
+      REQUIRE_THAT(files, VectorContains(filename));
+      triggered = true;
+    };
 
-        REQUIRE(triggered);
-    }
+    monitor->poll(handler);
+
+    REQUIRE(triggered);
+  }
 }
-

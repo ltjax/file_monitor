@@ -1,30 +1,28 @@
-#include <CoreServices/CoreServices.h>
 #include "mac_monitor.hpp"
+#include <CoreServices/CoreServices.h>
 
 struct file_monitor::mac_monitor::detail
 {
+  static void change_event(ConstFSEventStreamRef stream,
+                           void* context_info,
+                           size_t event_count,
+                           void* event_data,
+                           FSEventStreamEventFlags const event_flags[],
+                           FSEventStreamEventId const event_ids[])
+  {
+    auto that = static_cast<mac_monitor*>(context_info);
+    auto paths = reinterpret_cast<char**>(event_data);
 
-    static void change_event(ConstFSEventStreamRef stream,
-                             void* context_info,
-                             size_t event_count,
-                             void* event_data,
-                             FSEventStreamEventFlags const event_flags[],
-                             FSEventStreamEventId const event_ids[])
+    for (int i = 0; i < event_count; i++)
     {
-      auto that = static_cast<mac_monitor*>(context_info);
-      auto paths = reinterpret_cast<char**>(event_data);
-
-      for (int i = 0; i < event_count; i++)
-      {
-        that->path_changed(paths[i]);
-      }
+      that->path_changed(paths[i]);
     }
+  }
 
-    static void stop_source_signalled(void*)
-    {
-      CFRunLoopStop(CFRunLoopGetCurrent());
-    }
-
+  static void stop_source_signalled(void*)
+  {
+    CFRunLoopStop(CFRunLoopGetCurrent());
+  }
 };
 
 void file_monitor::mac_monitor::start(path_t const& where)
@@ -33,13 +31,19 @@ void file_monitor::mac_monitor::start(path_t const& where)
   this->m_base_path = where;
 
   // create a stream for the filesystem events
-  CFStringRef path_string = CFStringCreateWithCString(nullptr, where.string().c_str(), kCFStringEncodingUTF8);
-  CFArrayRef paths = CFArrayCreate(nullptr, (const void**) &path_string, 1, nullptr);
+  CFStringRef path_string =
+    CFStringCreateWithCString(nullptr, where.string().c_str(), kCFStringEncodingUTF8);
+  CFArrayRef paths = CFArrayCreate(nullptr, (const void**)&path_string, 1, nullptr);
   CFAbsoluteTime latency = 1.0; // latency in seconds
   FSEventStreamContext context{};
   context.info = this;
-  auto Stream = FSEventStreamCreate(nullptr, &detail::change_event, &context, paths,
-                                    kFSEventStreamEventIdSinceNow, latency, kFSEventStreamCreateFlagNone);
+  auto Stream = FSEventStreamCreate(nullptr,
+                                    &detail::change_event,
+                                    &context,
+                                    paths,
+                                    kFSEventStreamEventIdSinceNow,
+                                    latency,
+                                    kFSEventStreamCreateFlagNone);
 
   // create a source for the one-shot stop signal
   CFRunLoopSourceContext stop_source_context = {};
@@ -47,10 +51,7 @@ void file_monitor::mac_monitor::start(path_t const& where)
   m_stop_source = CFRunLoopSourceCreate(nullptr, 0, &stop_source_context);
 
   // start the event handling thread
-  this->m_event_thread = std::thread([this, Stream]()
-                                   {
-                                       run(Stream);
-                                   });
+  this->m_event_thread = std::thread([this, Stream]() { run(Stream); });
 }
 
 void file_monitor::mac_monitor::run(FSEventStreamRef stream)
@@ -63,7 +64,6 @@ void file_monitor::mac_monitor::run(FSEventStreamRef stream)
   CFRunLoopAddSource(m_run_loop, m_stop_source, kCFRunLoopDefaultMode);
   CFRunLoopRun();
 }
-
 
 file_monitor::mac_monitor::hashcode_t file_monitor::mac_monitor::hash_file(path_t const& filepath)
 {
@@ -111,7 +111,8 @@ file_monitor::path_t file_monitor::mac_monitor::relative_path(path_t const& file
 
 void file_monitor::mac_monitor::path_changed(path_t const& where)
 {
-  // TODO: we can use the non-recursive iterator if the event flags say the change was not in subdirs
+  // TODO: we can use the non-recursive iterator if the event flags say the change was not in
+  // subdirs
   using iterator_t = boost::filesystem::recursive_directory_iterator;
 
   for (auto& each : boost::make_iterator_range(iterator_t(where), {}))
@@ -151,7 +152,6 @@ file_monitor::mac_monitor::~mac_monitor()
 
 file_monitor::mac_monitor::mac_monitor()
 {
-
 }
 
 void file_monitor::mac_monitor::poll(change_event_t const& consumer)

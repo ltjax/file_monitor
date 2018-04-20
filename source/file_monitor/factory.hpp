@@ -1,12 +1,12 @@
 #pragma once
 
-#include <memory>
 #include "monitor.hpp"
+#include <memory>
 
 namespace file_monitor
 {
 /** Generate a default monitor.
-    That is currently a platform monitor with a 0.5 second debouncer. 
+    That is currently a platform monitor with a 0.5 second debouncer.
 */
 std::shared_ptr<monitor> make_monitor();
 
@@ -15,5 +15,3 @@ std::shared_ptr<monitor> make_monitor();
 */
 std::shared_ptr<monitor> make_platform_monitor();
 }
-
-
