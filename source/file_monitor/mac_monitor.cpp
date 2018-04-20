@@ -30,7 +30,7 @@ void file_monitor::mac_monitor::start(path_t const& where)
   m_keep_running = true;
   this->m_base_path = where;
 
-  // create a stream for the filesystem events
+  // Create a stream for the filesystem events
   CFStringRef path_string =
     CFStringCreateWithCString(nullptr, where.string().c_str(), kCFStringEncodingUTF8);
   CFArrayRef paths = CFArrayCreate(nullptr, (const void**)&path_string, 1, nullptr);
@@ -45,12 +45,12 @@ void file_monitor::mac_monitor::start(path_t const& where)
                                     latency,
                                     kFSEventStreamCreateFlagNone);
 
-  // create a source for the one-shot stop signal
+  // Create a source for the one-shot stop signal
   CFRunLoopSourceContext stop_source_context = {};
   stop_source_context.perform = &detail::stop_source_signalled;
   m_stop_source = CFRunLoopSourceCreate(nullptr, 0, &stop_source_context);
 
-  // start the event handling thread
+  // Start the event handling thread
   this->m_event_thread = std::thread([this, Stream]() { run(Stream); });
 }
 
@@ -93,7 +93,7 @@ void file_monitor::mac_monitor::hash_files_in(path_t const& root)
     }
     catch (std::exception const& Error)
     {
-      // TODO: log this?
+      // Files that cannot be hashed are just ignored
     }
   }
 }
@@ -111,8 +111,8 @@ file_monitor::path_t file_monitor::mac_monitor::relative_path(path_t const& file
 
 void file_monitor::mac_monitor::path_changed(path_t const& where)
 {
-  // TODO: we can use the non-recursive iterator if the event flags say the change was not in
-  // subdirs
+  // We can use the non-recursive iterator if the event flags say the change was not in
+  // subdirs, but that is an optimization only
   using iterator_t = boost::filesystem::recursive_directory_iterator;
 
   for (auto& each : boost::make_iterator_range(iterator_t(where), {}))
