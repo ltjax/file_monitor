@@ -130,7 +130,6 @@ void file_monitor::win_monitor::listen()
     auto message = std::string((const char*)buffer);
     LocalFree(buffer);
 
-    throw std::runtime_error("ReadDirectoryChangesW failed with " +
-                             std::string((const char*)buffer));
+    throw std::runtime_error("ReadDirectoryChangesW failed with " + message);
   }
 }
