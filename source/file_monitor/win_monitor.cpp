@@ -39,16 +39,16 @@ void win_monitor::start(path_t const& base_path)
   m_base_path = base_path;
 
   // Get a handle for the directory to watch
-  m_directory_handle = CreateFile(base_path.string().c_str(),
-                                  FILE_LIST_DIRECTORY,
-                                  FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,
-                                  NULL,
-                                  OPEN_EXISTING,
-                                  FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
-                                  NULL);
+  m_directory_handle = CreateFileW(base_path.wstring().c_str(),
+                                   FILE_LIST_DIRECTORY,
+                                   FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,
+                                   NULL,
+                                   OPEN_EXISTING,
+                                   FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
+                                   NULL);
 
   // Create an event for the polling
-  m_notify_event = CreateEvent(NULL, FALSE, FALSE, "FileChangedEvent");
+  m_notify_event = CreateEventA(NULL, FALSE, FALSE, "FileChangedEvent");
 
   if (m_notify_event == nullptr)
     throw std::runtime_error("FileMonitor failed to create event.");
@@ -115,14 +115,14 @@ void file_monitor::win_monitor::listen()
   {
     LPVOID buffer;
 
-    if (!FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                         FORMAT_MESSAGE_IGNORE_INSERTS,
-                       NULL,
-                       GetLastError(),
-                       MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                       (LPTSTR)&buffer,
-                       0,
-                       NULL))
+    if (!FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+                          FORMAT_MESSAGE_IGNORE_INSERTS,
+                        NULL,
+                        GetLastError(),
+                        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                        (LPSTR)&buffer,
+                        0,
+                        NULL))
     {
       throw std::runtime_error("Could not format error message for ReadDirectoryChangesW failure");
     }
