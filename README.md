@@ -24,7 +24,7 @@ monitor->start(root / "somefolder");
 while (keep_running)
 {
   updateYourProgram();
-  monitor->poll([](auto const& base_path, auto const& files)
+  monitor->poll([](auto const& files)
   {
     // base_path is the path that the monitor was started in
     // files is a std::vector of files that have changed
