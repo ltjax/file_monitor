@@ -25,7 +25,7 @@ TEST_CASE("can create monitor")
 TEST_CASE("in temporary folder")
 {
     scoped_temp_folder folder("file_monitor_test");
-    auto monitor = file_monitor::make_monitor();
+    auto monitor = file_monitor::make_platform_monitor();
 
     SECTION("detects single change")
     {
@@ -34,19 +34,13 @@ TEST_CASE("in temporary folder")
         set_file_content(path, "before");
         monitor->start(folder);
         set_file_content(path, "after");
-
-        // HACK: See Issue #14
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-
+        
         bool triggered = false;
-        auto handler = [&](auto const& base, auto const& files) {
+        auto handler = [&](auto const& files) {
             REQUIRE_THAT(files, VectorContains(filename));
             triggered = true;
         };
 
-        // HACK: See Issue #14 - once that is fixed, only call once and without sleep
-        monitor->poll(handler);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
         monitor->poll(handler);
 
         REQUIRE(triggered);
