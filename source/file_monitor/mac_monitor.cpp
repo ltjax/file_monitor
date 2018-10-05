@@ -160,7 +160,7 @@ void file_monitor::mac_monitor::poll(change_event_t const& consumer)
 
   if (!m_changed.empty())
   {
-    consumer(m_base_path, m_changed);
+    consumer(m_changed);
     m_changed.clear();
   }
 }
@@ -178,4 +178,9 @@ std::uint32_t file_monitor::mac_monitor::adler32(std::uint8_t const* data, std::
   }
 
   return (b << 16) | a;
+}
+
+file_monitor::path_t file_monitor::mac_monitor::base_path() const
+{
+    return m_base_path;
 }
