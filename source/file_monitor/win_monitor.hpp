@@ -19,12 +19,10 @@ namespace file_monitor
 class win_monitor : public monitor
 {
 public:
-  win_monitor();
+  win_monitor(path_t const& base_path);
   ~win_monitor() override;
 
   // Inherited via monitor
-  void stop() override;
-  void start(path_t const& base_path) override;
   path_t base_path() const override;
   void poll(change_event_t const& consumer) override;
 

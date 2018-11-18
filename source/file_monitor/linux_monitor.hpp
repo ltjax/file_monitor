@@ -7,13 +7,11 @@ namespace file_monitor
 class linux_monitor : public monitor
 {
 public:
-  linux_monitor();
+  linux_monitor(path_t const& base_path);
   ~linux_monitor() override;
 
   path_t base_path() const override;
-  void stop() override;
-  void start(const path_t& base_path) override;
-  void poll(const change_event_t& consumer) override;
+  void poll(change_event_t const& consumer) override;
 
 private:
   struct watch_t

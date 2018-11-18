@@ -8,34 +8,9 @@ namespace
 auto const RESULT_BUFFER_SIZE = 4096;
 }
 
-win_monitor::win_monitor()
+win_monitor::win_monitor(path_t const& base_path)
 {
   m_result_buffer.resize(RESULT_BUFFER_SIZE);
-}
-
-win_monitor::~win_monitor()
-{
-  if (m_directory_handle != INVALID_HANDLE_VALUE)
-    CloseHandle(m_directory_handle);
-
-  if (m_notify_event != nullptr)
-    CloseHandle(m_notify_event);
-}
-
-void win_monitor::stop()
-{
-}
-
-path_t win_monitor::base_path() const
-{
-  return m_base_path;
-}
-
-void win_monitor::start(path_t const& base_path)
-{
-  if (m_directory_handle != INVALID_HANDLE_VALUE)
-    throw std::runtime_error("FileMonitor already started.");
-
   m_base_path = base_path;
 
   // Get a handle for the directory to watch
@@ -56,6 +31,20 @@ void win_monitor::start(path_t const& base_path)
   m_overlapped_io.hEvent = m_notify_event;
 
   listen();
+}
+
+win_monitor::~win_monitor()
+{
+  if (m_directory_handle != INVALID_HANDLE_VALUE)
+    CloseHandle(m_directory_handle);
+
+  if (m_notify_event != nullptr)
+    CloseHandle(m_notify_event);
+}
+
+path_t win_monitor::base_path() const
+{
+  return m_base_path;
 }
 
 void win_monitor::poll(change_event_t const& consumer)
@@ -130,6 +119,6 @@ void file_monitor::win_monitor::listen()
     auto message = std::string((const char*)buffer);
     LocalFree(buffer);
 
-    throw std::runtime_error("ReadDirectoryChangesW failed with " + message);
+    throw std::runtime_error("Unable to start directory watch: " + message);
   }
 }

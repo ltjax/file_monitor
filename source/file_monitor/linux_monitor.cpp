@@ -5,20 +5,25 @@
 using namespace file_monitor;
 namespace fs = boost::filesystem;
 
-linux_monitor::linux_monitor()
+linux_monitor::linux_monitor(path_t const& base_path)
 {
   m_inotify_instance = inotify_init1(IN_NONBLOCK);
   if (m_inotify_instance == -1)
     throw std::runtime_error("Could not aquire an inotify instance!");
+
+  // for now, we have to only monitor directories and their contents
+  // since at least one other implementation has no file-level monitoring
+  // support.
+  if (!fs::is_directory(base_path))
+    throw std::runtime_error("Base path does not exist or is not a directory!");
+
+  m_base_path = base_path;
+  create_watches(m_base_path);
+  assert(!m_watches.empty());
+  m_base_watch_id = m_watches.front().id;
 }
 
 linux_monitor::~linux_monitor()
-{
-  stop();
-  close(m_inotify_instance);
-}
-
-void linux_monitor::stop()
 {
   assert(m_inotify_instance != -1);
 
@@ -28,6 +33,8 @@ void linux_monitor::stop()
   m_watches.clear();
   m_base_path = path_t();
   m_base_watch_id = -1;
+
+  close(m_inotify_instance);
 }
 
 void linux_monitor::create_watches(const path_t& root)
@@ -58,20 +65,6 @@ void linux_monitor::create_watches(const path_t& root)
   }
 }
 
-void linux_monitor::start(path_t const& base_path)
-{
-  // for now, we have to only monitor directories and their contents
-  // since at least one other implementation has no file-level monitoring
-  // support.
-  if (!fs::is_directory(base_path))
-    throw std::runtime_error("Base path does not exist or is not a directory!");
-
-  m_base_path = base_path;
-  create_watches(m_base_path);
-  assert(!m_watches.empty());
-  m_base_watch_id = m_watches.front().id;
-}
-
 void linux_monitor::poll(monitor::change_event_t const& consumer)
 {
   pollfd poll_descriptor = { m_inotify_instance, POLLIN };
@@ -95,20 +88,17 @@ void linux_monitor::process_events(monitor::change_event_t const& consumer)
 
     if (bytes_read <= 0)
     {
-      consumer(changed_files);
       break;
     }
 
-    inotify_event const* event = nullptr;
     for (auto i = events.data(); i < events.data() + bytes_read;
          i += sizeof(inotify_event) + event->len)
     {
-      event = reinterpret_cast<inotify_event const*>(i);
+      auto event = reinterpret_cast<inotify_event const*>(i);
 
       auto const& watch = find_watch(event->wd);
       if (event->mask & (IN_DELETE_SELF | IN_MOVE_SELF) && watch.id == m_base_watch_id)
       {
-        stop();
         continue;
       }
 
@@ -126,8 +116,8 @@ void linux_monitor::process_events(monitor::change_event_t const& consumer)
       // that either move TO the file or close the file after writing.
       if (event->mask & IN_CLOSE_WRITE || event->mask & IN_MOVED_TO)
       {
-        auto i = std::find(changed_files.begin(), changed_files.end(), changed_path);
-        if (i == changed_files.end())
+        auto found = std::find(changed_files.begin(), changed_files.end(), changed_path);
+        if (found == changed_files.end())
           changed_files.push_back(std::move(fs::relative(changed_path, m_base_path)));
       }
 
@@ -161,6 +151,11 @@ void linux_monitor::process_events(monitor::change_event_t const& consumer)
       // NOTE: Renaming will set the "cookie" ID of the IN_MOVED_FROM/IN_MOVED_TO pair,
       //       but we may not even see one of the events. For now, we ignore the cookie.
     }
+  }
+
+  if (!changed_files.empty())
+  {
+    consumer(changed_files);
   }
 }
 
