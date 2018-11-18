@@ -34,8 +34,19 @@ endif()
 add_library(${TARGET_NAME}
   ${SOURCE_LIST})
 
-target_link_libraries(${TARGET_NAME}
-  PUBLIC ${BOOST_IMPORT_TARGETS})
+if(file_monitor_USE_CONAN)
+  target_link_libraries(${TARGET_NAME}
+    PUBLIC ${CONAN_LIBS})
+else()
+  target_link_libraries(${TARGET_NAME}
+    PUBLIC ${BOOST_IMPORT_TARGETS})
+endif()
+
+if(file_monitor_PLATFORM STREQUAL PLATFORM_MACOS)
+  target_link_libraries(${TARGET_NAME}
+    PUBLIC "-framework CoreFoundation"
+    PUBLIC "-framework CoreServices")
+endif()
 
 target_include_directories(${TARGET_NAME}
   INTERFACE ../
