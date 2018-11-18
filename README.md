@@ -7,14 +7,15 @@ It does not aim to report a complete list of changes; instead, the results shoul
 That is certainly sufficient to trigger asset reloading.
 
 ## Usage
-You can instantiate a file monitor by calling the factory function `file_monitor::make_monitor(root / "somefolder")` with a path:
+You can instantiate a file monitor by calling the factory function `file_monitor::make_monitor(...)` with a path:
 
 ```c++
 #include <file_monitor/factory.hpp>
 
 int main(int argc, char** argv)
 {
-  auto monitor = file_monitor::make_monitor();
+  boost::filesystem::path root = "some_folder";
+  auto monitor = file_monitor::make_monitor(root);
   /* ... */
 }
 ```
