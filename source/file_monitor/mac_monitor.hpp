@@ -13,11 +13,8 @@ namespace file_monitor
 class mac_monitor : public monitor
 {
 public:
-  explicit mac_monitor();
+  explicit mac_monitor(path_t const& where);
   ~mac_monitor() override;
-
-  void stop() override;
-  void start(path_t const& where) override;
 
   path_t base_path() const override;
   void poll(change_event_t const& consumer) override;

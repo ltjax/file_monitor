@@ -2,26 +2,13 @@
 
 using namespace file_monitor;
 
-debouncer::debouncer(std::shared_ptr<monitor> decorated, clock_t::duration countdown_length)
+debouncer::debouncer(std::unique_ptr<monitor> decorated, clock_t::duration countdown_length)
 : m_decorated(std::move(decorated))
 , m_countdown_length(countdown_length)
 {
 }
 
-debouncer::~debouncer()
-{
-}
-
-void debouncer::stop()
-{
-  m_decorated->stop();
-}
-
-void debouncer::start(path_t const& base_path)
-{
-  m_countdown_started = false;
-  m_decorated->start(base_path);
-}
+debouncer::~debouncer() = default;
 
 path_t debouncer::base_path() const
 {

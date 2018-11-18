@@ -15,23 +15,16 @@ void set_file_content(file_monitor::path_t const& path, std::string content)
 }
 } // namespace
 
-TEST_CASE("can create monitor")
-{
-  auto monitor = file_monitor::make_monitor();
-  REQUIRE(monitor != nullptr);
-}
-
 TEST_CASE("in temporary folder")
 {
   scoped_temp_folder folder("file_monitor_test");
-  auto monitor = file_monitor::make_platform_monitor();
 
   SECTION("detects single change")
   {
     auto filename = file_monitor::path_t("test.file");
     auto path = folder.get() / filename;
     set_file_content(path, "before");
-    monitor->start(folder);
+    auto monitor = file_monitor::make_platform_monitor(folder);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     set_file_content(path, "after");

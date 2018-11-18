@@ -2,8 +2,6 @@
 #include <boost/next_prior.hpp>
 #include <boost/range/iterator_range.hpp>
 
-file_monitor::monitor::monitor() = default;
-file_monitor::monitor::~monitor() = default;
 
 file_monitor::path_t file_monitor::relative_child_path(file_monitor::path_t const& base,
                                                        file_monitor::path_t const& child)

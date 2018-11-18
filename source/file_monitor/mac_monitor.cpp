@@ -25,7 +25,8 @@ struct file_monitor::mac_monitor::detail
   }
 };
 
-void file_monitor::mac_monitor::start(path_t const& where)
+
+file_monitor::mac_monitor::mac_monitor(path_t const& where)
 {
   m_keep_running = true;
   this->m_base_path = canonical(where);
@@ -127,7 +128,7 @@ void file_monitor::mac_monitor::path_changed(path_t const& where)
   }
 }
 
-void file_monitor::mac_monitor::stop()
+file_monitor::mac_monitor::~mac_monitor()
 {
   m_keep_running = false;
   if (m_event_thread.joinable())
@@ -137,15 +138,6 @@ void file_monitor::mac_monitor::stop()
 
     m_event_thread.join();
   }
-}
-
-file_monitor::mac_monitor::~mac_monitor()
-{
-  stop();
-}
-
-file_monitor::mac_monitor::mac_monitor()
-{
 }
 
 void file_monitor::mac_monitor::poll(change_event_t const& consumer)
