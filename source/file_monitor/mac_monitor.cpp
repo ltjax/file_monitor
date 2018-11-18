@@ -69,7 +69,7 @@ file_monitor::mac_monitor::hashcode_t file_monitor::mac_monitor::hash_file(path_
 {
   boost::iostreams::mapped_file_source mapped_file(filepath.string());
 
-  return adler32(reinterpret_cast<std::uint8_t const*>(mapped_file.data()), mapped_file.size());
+  return file_monitor::adler32(reinterpret_cast<std::uint8_t const*>(mapped_file.data()), mapped_file.size());
 }
 
 void file_monitor::mac_monitor::hash_files_in(path_t const& root)
@@ -100,13 +100,7 @@ void file_monitor::mac_monitor::hash_files_in(path_t const& root)
 
 file_monitor::path_t file_monitor::mac_monitor::relative_path(path_t const& file)
 {
-  path_t result;
-  auto prefix = std::distance(m_base_path.begin(), m_base_path.end());
-
-  for (auto each : boost::make_iterator_range(boost::next(file.begin(), prefix), file.end()))
-    result /= each;
-
-  return result;
+  return relative_child_path(m_base_path, file);
 }
 
 void file_monitor::mac_monitor::path_changed(path_t const& where)
@@ -163,21 +157,6 @@ void file_monitor::mac_monitor::poll(change_event_t const& consumer)
     consumer(m_changed);
     m_changed.clear();
   }
-}
-
-std::uint32_t file_monitor::mac_monitor::adler32(std::uint8_t const* data, std::size_t size)
-{
-  std::uint32_t ADLER_PRIME = 65521;
-  std::uint32_t a = 1;
-  std::uint32_t b = 0;
-
-  for (std::size_t i = 0; i < size; ++i)
-  {
-    a = (a + data[i]) % ADLER_PRIME;
-    b = (b + a) % ADLER_PRIME;
-  }
-
-  return (b << 16) | a;
 }
 
 file_monitor::path_t file_monitor::mac_monitor::base_path() const

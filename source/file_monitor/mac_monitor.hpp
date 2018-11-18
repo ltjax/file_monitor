@@ -22,8 +22,6 @@ public:
   path_t base_path() const override;
   void poll(change_event_t const& consumer) override;
 
-  static std::uint32_t adler32(std::uint8_t const* data, std::size_t size);
-
 private:
   void run(FSEventStreamRef stream);
 
