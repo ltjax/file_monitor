@@ -1,3 +1,4 @@
 *.txt.user
 /cmake-build-*
 /.idea
+/build
