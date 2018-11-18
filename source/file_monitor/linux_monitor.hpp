@@ -22,6 +22,7 @@ private:
 
   // \invariant - we need to have a valid inotify instance
   void process_events(change_event_t const&);
+  void process_event(std::vector<path_t>& changes, inotify_event const* event);
   void create_watches(path_t const& root);
   watch_t const& find_watch(int id) const;
 

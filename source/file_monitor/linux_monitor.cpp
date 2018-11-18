@@ -43,7 +43,7 @@ void linux_monitor::create_watches(const path_t& root)
 
   auto id = inotify_add_watch(m_inotify_instance, root.c_str(), IN_ALL_EVENTS);
   if (id == -1)
-    throw std::runtime_error("Initializing a watch on " + root.string());
+    throw std::runtime_error("Unable to add watch on " + root.string());
 
   m_watches.emplace_back(watch_t{ id, root });
 
@@ -77,6 +77,64 @@ void linux_monitor::poll(monitor::change_event_t const& consumer)
   process_events(consumer);
 }
 
+void linux_monitor::process_event(std::vector<path_t>& changes, inotify_event const* event)
+{
+  auto const& watch = find_watch(event->wd);
+  if (event->mask & (IN_DELETE_SELF | IN_MOVE_SELF) && watch.id == m_base_watch_id)
+  {
+    continue;
+  }
+
+  // TODO: investigate other cases other than IN_DELETE_SELF where
+  //       event->len can equal 0.
+  if (event->len == 0)
+    continue;
+
+  auto const changed_path = watch.base_path / event->name;
+
+  // different events consitute a file change. some tools
+  // create temporary files and then move them to the actual
+  // file being watched others simplc y do a normal open/modify/
+  // close cylce. file modifications are basically all events
+  // that either move TO the file or close the file after writing.
+  if (event->mask & IN_CLOSE_WRITE || event->mask & IN_MOVED_TO)
+  {
+    auto found = std::find(changed_files.begin(), changed_files.end(), changed_path);
+    if (found == changed_files.end())
+      changed_files.push_back(std::move(fs::relative(changed_path, m_base_path)));
+  }
+
+  auto const absolute_path = fs::absolute(changed_path, m_base_path);
+  if (event->mask & IN_CREATE && fs::is_directory(absolute_path))
+  {
+    create_watches(absolute_path);
+  }
+  else if (event->mask & (IN_DELETE | IN_MOVED_FROM))
+  {
+    // we cannot filter here using fs::is_directory() anymore
+    // since the entity has already been deleted. we need to
+    // find the stale watch and remove
+    auto watch =
+      std::find_if(m_watches.cbegin(), m_watches.cend(), [absolute_path, this](auto const& watch) {
+        auto watch_path_abs = fs::absolute(watch.base_path, this->m_base_path);
+        return watch_path_abs == absolute_path.lexically_normal();
+      });
+
+    if (watch != m_watches.end())
+    {
+      inotify_rm_watch(m_inotify_instance, watch->id);
+      m_watches.erase(watch);
+    }
+  }
+
+  // TODO: find out whether watching for IN_MODIFY is necessary
+  // TODO: we don't care for IN_OPEN, IN_ACCESS or IN_ATTRIBS and IN_CLOSE_NOWRITE
+  //       events here, at least not yet
+
+  // NOTE: Renaming will set the "cookie" ID of the IN_MOVED_FROM/IN_MOVED_TO pair,
+  //       but we may not even see one of the events. For now, we ignore the cookie.
+}
+
 void linux_monitor::process_events(monitor::change_event_t const& consumer)
 {
   std::array<char, 4096> events;
@@ -85,7 +143,6 @@ void linux_monitor::process_events(monitor::change_event_t const& consumer)
   for (;;)
   {
     auto bytes_read = read(m_inotify_instance, events.data(), events.size());
-
     if (bytes_read <= 0)
     {
       break;
@@ -95,61 +152,7 @@ void linux_monitor::process_events(monitor::change_event_t const& consumer)
          i += sizeof(inotify_event) + event->len)
     {
       auto event = reinterpret_cast<inotify_event const*>(i);
-
-      auto const& watch = find_watch(event->wd);
-      if (event->mask & (IN_DELETE_SELF | IN_MOVE_SELF) && watch.id == m_base_watch_id)
-      {
-        continue;
-      }
-
-      // TODO: investigate other cases other than IN_DELETE_SELF where
-      //       event->len can equal 0.
-      if (event->len == 0)
-        continue;
-
-      auto const changed_path = watch.base_path / event->name;
-
-      // different events consitute a file change. some tools
-      // create temporary files and then move them to the actual
-      // file being watched others simplc y do a normal open/modify/
-      // close cylce. file modifications are basically all events
-      // that either move TO the file or close the file after writing.
-      if (event->mask & IN_CLOSE_WRITE || event->mask & IN_MOVED_TO)
-      {
-        auto found = std::find(changed_files.begin(), changed_files.end(), changed_path);
-        if (found == changed_files.end())
-          changed_files.push_back(std::move(fs::relative(changed_path, m_base_path)));
-      }
-
-      auto const absolute_path = fs::absolute(changed_path, m_base_path);
-      if (event->mask & IN_CREATE && fs::is_directory(absolute_path))
-      {
-        create_watches(absolute_path);
-      }
-      else if (event->mask & (IN_DELETE | IN_MOVED_FROM))
-      {
-        // we cannot filter here using fs::is_directory() anymore
-        // since the entity has already been deleted. we need to
-        // find the stale watch and remove
-        auto watch = std::find_if(
-          m_watches.cbegin(), m_watches.cend(), [absolute_path, this](auto const& watch) {
-            auto watch_path_abs = fs::absolute(watch.base_path, this->m_base_path);
-            return watch_path_abs == absolute_path.lexically_normal();
-          });
-
-        if (watch != m_watches.end())
-        {
-          inotify_rm_watch(m_inotify_instance, watch->id);
-          m_watches.erase(watch);
-        }
-      }
-
-      // TODO: find out whether watching for IN_MODIFY is necessary
-      // TODO: we don't care for IN_OPEN, IN_ACCESS or IN_ATTRIBS and IN_CLOSE_NOWRITE
-      //       events here, at least not yet
-
-      // NOTE: Renaming will set the "cookie" ID of the IN_MOVED_FROM/IN_MOVED_TO pair,
-      //       but we may not even see one of the events. For now, we ignore the cookie.
+      process_event(changed_files, event);
     }
   }
 
