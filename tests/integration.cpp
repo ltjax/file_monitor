@@ -13,7 +13,7 @@ void set_file_content(file_monitor::path_t const& path, std::string content)
   boost::filesystem::ofstream file(path, std::ios::binary | std::ios::trunc);
   file << content;
 }
-}
+} // namespace
 
 TEST_CASE("can create monitor")
 {
@@ -32,6 +32,8 @@ TEST_CASE("in temporary folder")
     auto path = folder.get() / filename;
     set_file_content(path, "before");
     monitor->start(folder);
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     set_file_content(path, "after");
 
     bool triggered = false;
@@ -39,6 +41,10 @@ TEST_CASE("in temporary folder")
       REQUIRE_THAT(files, VectorContains(filename));
       triggered = true;
     };
+
+    // NOTE: The change detection from the filesystem is not instantaneous, so we need to wait a bit
+    // This is, of course, super flaky, but I do not know how to make this better.
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     monitor->poll(handler);
 

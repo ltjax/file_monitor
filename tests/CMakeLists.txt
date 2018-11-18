@@ -5,6 +5,7 @@ add_executable(${TARGET_NAME}
   scoped_temp_folder.cpp
   scoped_temp_folder.hpp
   integration.cpp
+  unit.cpp
   main.cpp)
   
 target_link_libraries(${TARGET_NAME}

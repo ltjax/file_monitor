@@ -28,7 +28,7 @@ struct file_monitor::mac_monitor::detail
 void file_monitor::mac_monitor::start(path_t const& where)
 {
   m_keep_running = true;
-  this->m_base_path = where;
+  this->m_base_path = canonical(where);
 
   // Create a stream for the filesystem events
   CFStringRef path_string =
