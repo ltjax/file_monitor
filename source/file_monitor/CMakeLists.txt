@@ -35,8 +35,8 @@ add_library(${TARGET_NAME}
   ${SOURCE_LIST})
 
 if(file_monitor_USE_CONAN)
-  target_link_libraries(${TARGET_NAME}
-    PUBLIC ${CONAN_LIBS})
+  message(${CONAN_LIBS})
+  conan_target_link_libraries(${TARGET_NAME})
 else()
   target_link_libraries(${TARGET_NAME}
     PUBLIC ${BOOST_IMPORT_TARGETS})

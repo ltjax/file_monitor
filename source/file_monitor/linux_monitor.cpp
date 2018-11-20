@@ -5,6 +5,18 @@
 using namespace file_monitor;
 namespace fs = boost::filesystem;
 
+namespace {
+
+template <typename T>
+inline void insert_unique(std::vector<T>& container, T const& value)
+{
+  auto found = std::find(container.begin(), container.end(), value);
+  if (found == container.end())
+    container.push_back(value);
+}
+
+}
+
 linux_monitor::linux_monitor(path_t const& base_path)
 {
   m_inotify_instance = inotify_init1(IN_NONBLOCK);
@@ -82,26 +94,26 @@ void linux_monitor::process_event(std::vector<path_t>& changes, inotify_event co
   auto const& watch = find_watch(event->wd);
   if (event->mask & (IN_DELETE_SELF | IN_MOVE_SELF) && watch.id == m_base_watch_id)
   {
-    continue;
+    return;
   }
 
   // TODO: investigate other cases other than IN_DELETE_SELF where
   //       event->len can equal 0.
   if (event->len == 0)
-    continue;
+  {
+    return;
+  }
 
   auto const changed_path = watch.base_path / event->name;
 
-  // different events consitute a file change. some tools
+  // different events constitute a file change. some tools
   // create temporary files and then move them to the actual
-  // file being watched others simplc y do a normal open/modify/
-  // close cylce. file modifications are basically all events
+  // file being watched others simply do a normal open/modify/
+  // close cycle. file modifications are basically all events
   // that either move TO the file or close the file after writing.
   if (event->mask & IN_CLOSE_WRITE || event->mask & IN_MOVED_TO)
   {
-    auto found = std::find(changed_files.begin(), changed_files.end(), changed_path);
-    if (found == changed_files.end())
-      changed_files.push_back(std::move(fs::relative(changed_path, m_base_path)));
+    insert_unique(changes, fs::relative(changed_path, m_base_path));
   }
 
   auto const absolute_path = fs::absolute(changed_path, m_base_path);
@@ -127,35 +139,27 @@ void linux_monitor::process_event(std::vector<path_t>& changes, inotify_event co
     }
   }
 
-  // TODO: find out whether watching for IN_MODIFY is necessary
-  // TODO: we don't care for IN_OPEN, IN_ACCESS or IN_ATTRIBS and IN_CLOSE_NOWRITE
-  //       events here, at least not yet
-
-  // NOTE: Renaming will set the "cookie" ID of the IN_MOVED_FROM/IN_MOVED_TO pair,
-  //       but we may not even see one of the events. For now, we ignore the cookie.
 }
 
 void linux_monitor::process_events(monitor::change_event_t const& consumer)
 {
   std::array<char, 4096> events;
   std::vector<path_t> changed_files;
-
-  for (;;)
+  while (true)
   {
     auto bytes_read = read(m_inotify_instance, events.data(), events.size());
     if (bytes_read <= 0)
     {
       break;
     }
-
-    for (auto i = events.data(); i < events.data() + bytes_read;
-         i += sizeof(inotify_event) + event->len)
+    for (auto head = events.data(); head < events.data() + bytes_read;)
     {
-      auto event = reinterpret_cast<inotify_event const*>(i);
+      auto event = reinterpret_cast<inotify_event const*>(head);
+      auto total_length = sizeof(inotify_event) + event->len;
       process_event(changed_files, event);
+      head += total_length;
     }
   }
-
   if (!changed_files.empty())
   {
     consumer(changed_files);
