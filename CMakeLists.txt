@@ -19,7 +19,7 @@ endif()
 
 if (file_monitor_USE_CONAN)
   include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-  conan_basic_setup()
+  conan_basic_setup(TARGETS)
 else()
   # Dependencies
   # TODO: Need to verify that requiring COMPONENTS works for all platforms

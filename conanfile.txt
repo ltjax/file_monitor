@@ -1,5 +1,6 @@
 [requires]
-boost/1.68.0@conan/stable
+boost_filesystem/1.68.0@bincrafters/stable
+boost_iostreams/1.68.0@bincrafters/stable
 
 [options]
 boost:shared=False

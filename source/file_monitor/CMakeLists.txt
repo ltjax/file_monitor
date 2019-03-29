@@ -40,6 +40,8 @@ if(file_monitor_USE_CONAN)
 else()
   target_link_libraries(${TARGET_NAME}
     PUBLIC ${BOOST_IMPORT_TARGETS})
+  target_include_directories(${TARGET_NAME}
+    PUBLIC ${Boost_INCLUDE_DIR})
 endif()
 
 if(file_monitor_PLATFORM STREQUAL PLATFORM_MACOS)
@@ -49,8 +51,7 @@ if(file_monitor_PLATFORM STREQUAL PLATFORM_MACOS)
 endif()
 
 target_include_directories(${TARGET_NAME}
-  INTERFACE ../
-  PUBLIC ${Boost_INCLUDE_DIR})
+  INTERFACE ../)
 
 target_compile_definitions(${TARGET_NAME}
   PRIVATE "-DFILE_MONITOR_${file_monitor_PLATFORM}")
