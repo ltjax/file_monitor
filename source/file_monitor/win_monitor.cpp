@@ -93,7 +93,7 @@ void file_monitor::win_monitor::listen()
 
   BOOL result = ReadDirectoryChangesW(m_directory_handle,
                                       m_result_buffer.data(),
-                                      m_result_buffer.size(),
+                                      static_cast<DWORD>(m_result_buffer.size()),
                                       TRUE,
                                       FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_FILE_NAME,
                                       &unused,
