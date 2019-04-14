@@ -1,6 +1,6 @@
 [requires]
-boost_filesystem/1.68.0@bincrafters/stable
-boost_iostreams/1.68.0@bincrafters/stable
+boost_filesystem/1.69.0@bincrafters/stable
+boost_iostreams/1.69.0@bincrafters/stable
 
 [options]
 boost:shared=False
