@@ -1,4 +1,6 @@
 *.txt.user
 /cmake-build-*
-/.idea
+/.idea/
 /build
+/.vs/
+/CMakeSettings.json
