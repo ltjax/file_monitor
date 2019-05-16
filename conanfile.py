@@ -15,19 +15,17 @@ class FilemonitorConan(ConanFile):
     generators = "cmake"
     exports_sources = "*"
     requires = "boost_filesystem/1.69.0@bincrafters/stable", "boost_iostreams/1.69.0@bincrafters/stable"
-
-    def build(self):
+    
+    def _configured_cmake(self):
         cmake = CMake(self)
         cmake.configure(source_folder=".", defs={'file_monitor_USE_CONAN': 'ON'})
-        cmake.build()
+        return cmake
+
+    def build(self):
+        self._configured_cmake().build()
 
     def package(self):
-        self.copy("*.hpp", dst="include", src="hello")
-        self.copy("*file_monitor.lib", dst="lib", keep_path=False)
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.so", dst="lib", keep_path=False)
-        self.copy("*.dylib", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
+        self._configured_cmake().install()
 
     def package_info(self):
         self.cpp_info.libs = ["file_monitor"]
