@@ -13,7 +13,7 @@ class FilemonitorConan(ConanFile):
     options = {"shared": [True, False]}
     default_options = "shared=False"
     generators = "cmake"
-    exports_sources = "*"
+    exports_sources = "source/*", "tests/*", "CMakeLists.txt"
     requires = "boost_filesystem/1.69.0@bincrafters/stable", "boost_iostreams/1.69.0@bincrafters/stable"
     
     def _configured_cmake(self):
