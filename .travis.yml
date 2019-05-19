@@ -9,7 +9,9 @@ before_install:
 script:
   - docker exec build apt-get update > /dev/null
   - docker exec build apt-get dist-upgrade -y > /dev/null
-  - docker exec build apt-get install git build-essential cmake libboost-filesystem-dev -y > /dev/null
+  - docker exec build apt-get install git build-essential cmake python3-pip -y > /dev/null
+  - docker exec build pip3 install conan
   - docker exec build git clone https://github.com/ltjax/file_monitor.git /source
+  - docker exec build mkdir build && cd build && conan install ../source
   - docker exec build cmake -DCMAKE_BUILD_TYPE=Release -B/build -H/source
   - docker exec build cmake --build /build
