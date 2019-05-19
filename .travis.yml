@@ -12,6 +12,7 @@ script:
   - docker exec build apt-get install git build-essential cmake python3-pip -y > /dev/null
   - docker exec build pip3 install conan
   - docker exec build git clone https://github.com/ltjax/file_monitor.git /source
-  - docker exec build "mkdir -p build && cd build && conan install ../source"
+  - docker exec build mkdir -p /build
+  - docker exec build conan install /source -if /build
   - docker exec build cmake -DCMAKE_BUILD_TYPE=Release -B/build -H/source
   - docker exec build cmake --build /build
