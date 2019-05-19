@@ -13,6 +13,7 @@ script:
   - docker exec build pip3 install conan
   - docker exec build git clone https://github.com/ltjax/file_monitor.git /source
   - docker exec build mkdir -p /build
+  - docker exec build conan config install /source/conan_config
   - docker exec build conan install /source -if /build
   - docker exec build cmake -DCMAKE_BUILD_TYPE=Release -B/build -H/source
   - docker exec build cmake --build /build
