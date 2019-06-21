@@ -14,12 +14,16 @@ class FilemonitorConan(ConanFile):
     default_options = "shared=False"
     generators = "cmake"
     exports_sources = "source/*", "tests/*", "CMakeLists.txt"
-    requires = "boost_filesystem/1.69.0@bincrafters/stable", "boost_iostreams/1.69.0@bincrafters/stable"
+    requires = "boost_filesystem/1.69.0@bincrafters/stable", "boost_range/1.69.0@bincrafters/stable", "boost_algorithm/1.69.0@bincrafters/stable"
     
     def _configured_cmake(self):
         cmake = CMake(self)
         cmake.configure(source_folder=".", defs={'file_monitor_USE_CONAN': 'ON'})
         return cmake
+
+    def requirements(self):
+        if self.settings.os == "Macos":
+            self.requires("boost_iostreams/1.69.0@bincrafters/stable")
 
     def build(self):
         self._configured_cmake().build()

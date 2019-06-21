@@ -6,6 +6,19 @@ Lean library to observe file changes in a specific directory path. Primarily mea
 It does not aim to report a complete list of changes; instead, the results should be treated as hints.
 That is certainly sufficient to trigger asset reloading.
 
+## Install via conan
+
+First you are going to have to add both the bincrafters and my repository:
+```
+conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
+conan remote add ltjax https://api.bintray.com/conan/ltjax/conan 
+```
+
+Then you can add the dependency like this:
+```
+file_monitor/0.1@ltjax/testing
+```
+
 ## Usage
 You can instantiate a file monitor by calling the factory function `file_monitor::make_monitor(...)` with a path:
 

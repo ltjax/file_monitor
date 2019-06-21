@@ -39,11 +39,16 @@ if(file_monitor_USE_CONAN)
     PUBLIC CONAN_PKG::boost_filesystem
     PUBLIC CONAN_PKG::boost_algorithm
     PUBLIC CONAN_PKG::boost_range)
+  if(file_monitor_PLATFORM STREQUAL PLATFORM_MACOS)
+    target_link_libraries(${TARGET_NAME}
+      PUBLIC CONAN_PKG::boost_iostreams)    
+  endif()
 else()
   target_link_libraries(${TARGET_NAME}
     PUBLIC ${BOOST_IMPORT_TARGETS})
   target_include_directories(${TARGET_NAME}
     PUBLIC ${Boost_INCLUDE_DIR})
+
 endif()
 
 if(file_monitor_PLATFORM STREQUAL PLATFORM_MACOS)
