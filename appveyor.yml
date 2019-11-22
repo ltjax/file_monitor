@@ -15,6 +15,7 @@ environment:
   BOOST_ROOT: 
 
 before_build:
+  - pip install conan
   - mkdir "c:\projects\file_monitor_build"
   - cd "c:\projects\file_monitor_build"
   - cmake -G "Visual Studio 15 2017 Win64" \
