@@ -1,7 +1,4 @@
 # file_monitor AppVeyor Configuration
-# 
-# TODO: Deployment
-#
 
 # We currently only officially support VS 2017
 image: Visual Studio 2017
@@ -12,18 +9,18 @@ matrix:
 clone_folder: c:\projects\file_monitor
 
 environment:
-  BOOST_ROOT: 
+  PYTHON: "C:\Python38-x64"
 
 before_build:
+  - SET PATH=%PYTHON%;%PATH%
   - pip install conan
   - mkdir "c:\projects\file_monitor_build"
   - cd "c:\projects\file_monitor_build"
+  - conan install "c:\projects\file_monitor" \
+          -s build_type=Release
   - cmake -G "Visual Studio 15 2017 Win64" \
-          -DBOOST_ROOT="C:/Libraries/boost_1_65_1" \
           "c:\projects\file_monitor"
 
 build_script:
   - cmake --build "c:\projects\file_monitor_build" --config Release
-
-
 
