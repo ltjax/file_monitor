@@ -16,6 +16,7 @@ before_build:
   - pip install conan
   - mkdir "c:\projects\file_monitor_build"
   - cd "c:\projects\file_monitor_build"
+  - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
   - conan install ../file_monitor -s build_type=Release
   - cmake -G "Visual Studio 15 2017 Win64" \
           "c:\projects\file_monitor"
