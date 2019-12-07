@@ -1,6 +1,23 @@
 #include "mac_monitor.hpp"
 #include <CoreServices/CoreServices.h>
 
+#ifdef file_monitor_USE_BOOST
+#include <boost/filesystem/operations.hpp>
+#include <boost/iostreams/device/mapped_file.hpp>
+
+using boost::filesystem::recursive_directory_iterator;
+boost::iterator_range<recursive_directory_iterator> files_in(file_monitor::path_t const& root)
+{
+  return boost::make_iterator_range(recursive_directory_iterator(root), {});
+}
+#else
+#include <fstream>
+std::filesystem::recursive_directory_iterator files_in(file_monitor::path_t const& root)
+{
+  return std::filesystem::recursive_directory_iterator{root};
+}
+#endif
+
 struct file_monitor::mac_monitor::detail
 {
   static void change_event(ConstFSEventStreamRef stream,
@@ -68,16 +85,20 @@ void file_monitor::mac_monitor::run(FSEventStreamRef stream)
 
 file_monitor::mac_monitor::hashcode_t file_monitor::mac_monitor::hash_file(path_t const& filepath)
 {
+#ifdef file_monitor_USE_BOOST
   boost::iostreams::mapped_file_source mapped_file(filepath.string());
 
   return file_monitor::adler32(reinterpret_cast<std::uint8_t const*>(mapped_file.data()), mapped_file.size());
+#else
+  std::ifstream file(filepath, std::ios::binary);
+  std::vector<char> data(std::istreambuf_iterator<char>{file}, {});
+  return file_monitor::adler32(reinterpret_cast<std::uint8_t const*>(data.data()), data.size());
+#endif
 }
 
 void file_monitor::mac_monitor::hash_files_in(path_t const& root)
 {
-  using Iterator = boost::filesystem::recursive_directory_iterator;
-
-  for (auto& each : boost::make_iterator_range(Iterator(root), {}))
+  for (auto& each : files_in(root))
   {
     if (!m_keep_running)
       return;
@@ -108,9 +129,7 @@ void file_monitor::mac_monitor::path_changed(path_t const& where)
 {
   // We can use the non-recursive iterator if the event flags say the change was not in
   // subdirs, but that is an optimization only
-  using iterator_t = boost::filesystem::recursive_directory_iterator;
-
-  for (auto& each : boost::make_iterator_range(iterator_t(where), {}))
+  for (auto& each : files_in(where))
   {
     if (!is_regular_file(each.status()))
       continue;

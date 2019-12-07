@@ -3,18 +3,18 @@ project(file_monitor)
 
 
 option(file_monitor_BUILD_TESTS "Build tests" ON)
-option(file_monitor_FIND_BOOST "Find boost library via find_package" ON)
+option(file_monitor_FIND_BOOST "Find boost library via find_package" OFF)
 option(file_monitor_USE_CONAN "Use conan" ON)
 option(file_monitor_USE_BOOST "Use boost instead of C++17 features" OFF)
 option(file_monitor_USE_CXX17 "Use C++17 features" ON)
 
 # Validate options
 if (NOT file_monitor_USE_BOOST AND NOT file_monitor_USE_CXX17)
-  message(FATAL "Need to enable either boost or C++17 for filesystem types")
+  message(FATAL_ERROR "Need to enable either boost or C++17 for filesystem types")
 endif()
 
 if (file_monitor_FIND_BOOST AND NOT file_monitor_USE_BOOST)
-  message(FATAL "No need to find boost if not using boost")
+  message(FATAL_ERROR "No need to find boost if not using boost")
 endif()
 
 # Optionally enable C++17
