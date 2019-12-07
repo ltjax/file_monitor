@@ -3,8 +3,7 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/gsgswe3uxcufryu6?svg=true)](https://ci.appveyor.com/project/thokra1/file-monitor)
 
 Lean library to observe file changes in a specific directory path. Primarily meant for asset hotloading in games and 3D engines.
-It does not aim to report a complete list of changes; instead, the results should be treated as hints.
-That is certainly sufficient to trigger asset reloading.
+It does not aim to report a complete list of changes; instead, the results should be treated as hints which can be used to trigger asset reloading.
 
 ## Install via conan
 
