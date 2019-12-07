@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <cassert>
 
-#ifdef file_system_USE_BOOST
+#ifdef file_monitor_USE_BOOST
 #include <boost/filesystem.hpp>
 namespace filesystem = boost::filesystem;
 #else
@@ -23,7 +23,7 @@ template <typename T> inline void insert_unique(std::vector<T>& container, T con
 
 inline path_t join(path_t lhs, path_t const& rhs)
 {
-#ifdef file_system_USE_BOOST
+#ifdef file_monitor_USE_BOOST
   return absolute(lhs, rhs);
 #else
   return (lhs /= rhs);

@@ -1,6 +1,6 @@
 #include "monitor.hpp"
 
-#ifdef file_system_USE_BOOST
+#ifdef file_monitor_USE_BOOST
 #include <boost/next_prior.hpp>
 #include <boost/range/iterator_range.hpp>
 
