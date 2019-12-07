@@ -1,4 +1,6 @@
 #include "monitor.hpp"
+
+#ifdef file_system_USE_BOOST
 #include <boost/next_prior.hpp>
 #include <boost/range/iterator_range.hpp>
 
@@ -15,6 +17,13 @@ file_monitor::path_t file_monitor::relative_child_path(file_monitor::path_t cons
 
   return result;
 }
+#else
+file_monitor::path_t file_monitor::relative_child_path(file_monitor::path_t const& base,
+                                                       file_monitor::path_t const& child)
+{
+  return child.lexically_relative(base);
+}
+#endif
 
 std::uint32_t file_monitor::adler32(std::uint8_t const* data, std::size_t size)
 {

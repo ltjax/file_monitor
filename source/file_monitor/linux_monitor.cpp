@@ -1,9 +1,16 @@
 #include "linux_monitor.hpp"
-#include <boost/filesystem.hpp>
 #include <sys/poll.h>
+#include <unistd.h>
+#include <cassert>
+
+#ifdef file_system_USE_BOOST
+#include <boost/filesystem.hpp>
+namespace filesystem = boost::filesystem;
+#else
+namespace filesystem = std::filesystem;
+#endif
 
 using namespace file_monitor;
-namespace filesystem = boost::filesystem;
 
 namespace
 {
@@ -12,6 +19,15 @@ template <typename T> inline void insert_unique(std::vector<T>& container, T con
   auto found = std::find(container.begin(), container.end(), value);
   if (found == container.end())
     container.push_back(value);
+}
+
+inline path_t join(path_t lhs, path_t const& rhs)
+{
+#ifdef file_system_USE_BOOST
+  return absolute(lhs, rhs);
+#else
+  return (lhs /= rhs);
+#endif
 }
 
 } // namespace
@@ -103,8 +119,8 @@ void linux_monitor::process_event(std::vector<path_t>& changes, inotify_event co
     insert_unique(changes, relative(changed_path, m_base_path));
   }
 
-  auto const absolute_path = absolute(changed_path, m_base_path);
-  if (event->mask & IN_CREATE && is_directory(absolute_path))
+  auto const absolute_path = join(changed_path, m_base_path);
+  if (event->mask & IN_CREATE && filesystem::is_directory(absolute_path))
   {
     create_watches(absolute_path);
   }
@@ -112,7 +128,7 @@ void linux_monitor::process_event(std::vector<path_t>& changes, inotify_event co
   {
     auto watch =
       std::find_if(m_watches.cbegin(), m_watches.cend(), [absolute_path, this](auto const& watch) {
-        auto watch_path_abs = filesystem::absolute(watch.base_path, this->m_base_path);
+        auto watch_path_abs = join(watch.base_path, this->m_base_path);
         return watch_path_abs == absolute_path.lexically_normal();
       });
 
