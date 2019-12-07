@@ -17,6 +17,12 @@ if (file_monitor_FIND_BOOST AND NOT file_monitor_USE_BOOST)
   message(FATAL_ERROR "No need to find boost if not using boost")
 endif()
 
+if (file_monitor_USE_BOOST)
+  message("Using boost::filesystem")
+else()
+  message("Using std::filesystem")
+endif()
+
 # Optionally enable C++17
 if (file_monitor_USE_CXX17)
   set(CMAKE_CXX_STANDARD 17)

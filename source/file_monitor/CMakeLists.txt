@@ -37,6 +37,8 @@ add_library(${TARGET_NAME}
 if(file_monitor_USE_BOOST)
   target_link_libraries(${TARGET_NAME}
     PUBLIC ${BOOST_TARGETS})
+  target_compile_definitions(${TARGET_NAME}
+    PUBLIC "file_monitor_USE_BOOST")
 endif()
 
 if(file_monitor_PLATFORM STREQUAL PLATFORM_MACOS)
