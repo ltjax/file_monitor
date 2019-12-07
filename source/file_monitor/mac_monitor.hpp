@@ -2,8 +2,6 @@
 
 #include "monitor.hpp"
 #include <CoreServices/CoreServices.h>
-#include <boost/filesystem/operations.hpp>
-#include <boost/iostreams/device/mapped_file.hpp>
 #include <map>
 #include <mutex>
 #include <thread>
