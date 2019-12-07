@@ -1,6 +1,6 @@
 #pragma once
 
-#include <boost/filesystem/path.hpp>
+#include <file_monitor/monitor.hpp>
 #include <string>
 
 class scoped_temp_folder
@@ -11,16 +11,16 @@ public:
   ~scoped_temp_folder();
   scoped_temp_folder& operator=(scoped_temp_folder const&) = delete;
 
-  operator boost::filesystem::path const&() const
+  operator file_monitor::path_t const&() const
   {
     return get();
   }
 
-  boost::filesystem::path const& get() const
+  file_monitor::path_t const& get() const
   {
     return m_path;
   }
 
 private:
-  boost::filesystem::path m_path;
+  file_monitor::path_t m_path;
 };

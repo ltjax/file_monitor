@@ -1,11 +1,24 @@
 cmake_minimum_required(VERSION 3.4)
 project(file_monitor)
 
-set(CMAKE_CXX_STANDARD 14)
 
 option(file_monitor_BUILD_TESTS "Build tests" ON)
 option(file_monitor_FIND_BOOST "Find boost library via find_package" ON)
 option(file_monitor_USE_CONAN "Use conan" ON)
+option(file_monitor_USE_BOOST "Use boost instead of C++17 features" OFF)
+option(file_monitor_USE_CXX17 "Use C++17 features" ON)
+
+# Validate options
+if (NOT file_monitor_USE_BOOST AND NOT file_monitor_USE_CXX17)
+  message(FATAL "Need to enable either boost or C++17 for filesystem types")
+endif()
+
+# Optionally enable C++17
+if (file_monitor_USE_CXX17)
+  set(CMAKE_CXX_STANDARD 17)
+else()
+  set(CMAKE_CXX_STANDARD 14)
+endif()
 
 # Canonize platform selection
 set(file_monitor_PLATFORM Undefined)

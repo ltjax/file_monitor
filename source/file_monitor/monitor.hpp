@@ -1,12 +1,21 @@
 #pragma once
 
+#ifdef file_monitor_USE_BOOST
 #include <boost/filesystem/path.hpp>
+#else
+#include <filesystem>
+#endif
+
 #include <functional>
 #include <vector>
 
 namespace file_monitor
 {
+#ifdef file_monitor_USE_BOOST
 using path_t = boost::filesystem::path;
+#else
+using path_t = std::filesystem::path;
+#endif
 using file_list_t = std::vector<path_t>;
 
 class monitor
@@ -19,6 +28,7 @@ public:
 
   virtual path_t base_path() const = 0;
   virtual void poll(change_event_t const& consumer) = 0;
+
 private:
 };
 
@@ -32,4 +42,4 @@ path_t relative_child_path(path_t const& base, path_t const& child);
  */
 
 std::uint32_t adler32(std::uint8_t const* data, std::size_t size);
-}
+} // namespace file_monitor
