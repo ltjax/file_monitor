@@ -46,5 +46,7 @@ class FilemonitorConan(ConanFile):
         self.cpp_info.libs = ["file_monitor"]
         if self.options.filesystem == "boost":
             self.cpp_info.defines = ["file_monitor_USE_BOOST"]
+        if self.settings.os == "Macos":
+            self.cpp_info.frameworks = ["CoreFoundation", "CoreServices"]
 
 
