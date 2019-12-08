@@ -1,5 +1,6 @@
 #include "win_monitor.hpp"
 #include <array>
+#include <cassert>
 
 using namespace file_monitor;
 

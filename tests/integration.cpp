@@ -1,16 +1,24 @@
 #include "scoped_temp_folder.hpp"
-#include <boost/filesystem/fstream.hpp>
 #include <catch.hpp>
 #include <file_monitor/factory.hpp>
 #include <thread>
+
+#ifdef file_monitor_USE_BOOST
+#include <boost/filesystem/fstream.hpp>
+using ofstream = boost::filesystem::ofstream;
+#else
+#include <fstream>
+using ofstream = std::ofstream;
+#endif
 
 using namespace Catch::Matchers;
 
 namespace
 {
+
 void set_file_content(file_monitor::path_t const& path, std::string content)
 {
-  boost::filesystem::ofstream file(path, std::ios::binary | std::ios::trunc);
+  ofstream file(path, std::ios::binary | std::ios::trunc);
   file << content;
 }
 } // namespace

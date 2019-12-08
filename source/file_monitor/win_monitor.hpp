@@ -9,9 +9,6 @@
 #define NOMINMAX
 #endif
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/utility.hpp>
-#include <chrono>
 #include <windows.h>
 
 namespace file_monitor
@@ -29,7 +26,6 @@ public:
 private:
   void listen();
 
-  using clock_t = std::chrono::high_resolution_clock;
   std::vector<char> m_result_buffer;
   HANDLE m_directory_handle = INVALID_HANDLE_VALUE;
   HANDLE m_notify_event = nullptr;

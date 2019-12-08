@@ -1,4 +1,3 @@
-#include <boost/filesystem/operations.hpp>
 #include <catch.hpp>
 #include <file_monitor/monitor.hpp>
 
