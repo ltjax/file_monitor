@@ -3,7 +3,7 @@ from conans import ConanFile, CMake, tools
 
 class FilemonitorConan(ConanFile):
     name = "file_monitor"
-    version = "0.1"
+    version = "1.0"
     license = "MIT"
     author = "Marius Elvert marius.elvert@googlemail.com"
     url = "https://github.com/ltjax/file_monitor"

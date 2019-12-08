@@ -15,7 +15,7 @@ conan remote add ltjax https://api.bintray.com/conan/ltjax/conan
 
 Then you can add the dependency like this:
 ```
-file_monitor/0.1@ltjax/testing
+file_monitor/1.0@ltjax/testing
 ```
 
 ## Usage
@@ -26,8 +26,7 @@ You can instantiate a file monitor by calling the factory function `file_monitor
 
 int main(int argc, char** argv)
 {
-  boost::filesystem::path root = "some_folder";
-  auto monitor = file_monitor::make_monitor(root);
+  auto monitor = file_monitor::make_monitor("some_folder");
   /* ... */
 }
 ```
@@ -47,12 +46,10 @@ while (keep_running)
 Note that the monitor will only detect changes on files that existed when it was started. File renaming and creation is not detected.
 
 ## Platform support
-The file monitor works on Windows, Linux and Mac OS X. It can be built with VC++ 2017, and recent g++ and clang versions. It requires C++14.
+The file monitor works on Windows, Linux and Mac OS X. It can be built with VC++ 2017, and recent g++ and clang versions. It requires C++14, but C++17 is recommended.
 
 ## Dependencies
-* Boost.Filesystem
-
-The C++17 filesystem library will be supported soon. Boost support will eventually be dropped. 
+file_monitor does not need any dependencies from C++17 on. For older standards, Boost.Filesystem is required. 
 
 ## Integration
 There are two ways to integrate file_monitor with your application. Either drop it into your source folder and use CMake's `add_subdirectory()` or use the install target to install the library in your environment.
