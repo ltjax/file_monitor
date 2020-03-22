@@ -1,26 +1,25 @@
-# file_monitor AppVeyor Configuration
-
-# We currently only officially support VS 2017
-image: Visual Studio 2017
-
-matrix:
-  fast_finish: true
-
-clone_folder: c:\projects\file_monitor
+build: false
 
 environment:
-  PYTHON: "C:\Python38-x64"
+    PYTHON: "C:\\Python38-x64"
 
-before_build:
-  - SET PATH=%PYTHON%;%PATH%
-  - pip install conan
-  - mkdir "c:\projects\file_monitor_build"
-  - cd "c:\projects\file_monitor_build"
-  - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
-  - conan install ../file_monitor -s build_type=Release
-  - cmake -G "Visual Studio 15 2017 Win64" \
-          "c:\projects\file_monitor"
+    CONAN_USERNAME: "ltjax"
+    CONAN_LOGIN_USERNAME: "ltjax"
+    CONAN_CHANNEL: "testing"
+    CONAN_REMOTES: "https://api.bintray.com/conan/bincrafters/public-conan"
+    CONAN_UPLOAD: "https://api.bintray.com/conan/ltjax/conan"
+    
+    matrix:
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+          CONAN_VISUAL_VERSIONS: 16
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+          CONAN_VISUAL_VERSIONS: 15
 
-build_script:
-  - cmake --build "c:\projects\file_monitor_build" --config Release
+install:
+  - set PATH=%PATH%;%PYTHON%/Scripts/
+  - pip.exe install conan --upgrade
+  - pip.exe install conan_package_tools
+  - conan user # It creates the conan data directory
 
+test_script:
+  - python build.py
