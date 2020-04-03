@@ -1,8 +1,6 @@
 build: false
 
 environment:
-    PYTHON: "C:\\Python38-x64"
-
     CONAN_USERNAME: "ltjax"
     CONAN_LOGIN_USERNAME: "ltjax"
     CONAN_CHANNEL: "testing"
@@ -11,9 +9,12 @@ environment:
     
     matrix:
         - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+          PYTHON: "C:\\Python38-x64"
           CONAN_VISUAL_VERSIONS: 16
         - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+          PYTHON: "C:\\Python38-x64"
           CONAN_VISUAL_VERSIONS: 15
+        - APPVEYOR_BUILD_WORKER_IMAGE: macos
 
 install:
   - set PATH=%PATH%;%PYTHON%/Scripts/
