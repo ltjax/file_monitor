@@ -8,13 +8,13 @@ environment:
     CONAN_UPLOAD: "https://api.bintray.com/conan/ltjax/conan"
     
     matrix:
+        - APPVEYOR_BUILD_WORKER_IMAGE: macos
         - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
           PYTHON: "C:\\Python38-x64"
           CONAN_VISUAL_VERSIONS: 16
         - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
           PYTHON: "C:\\Python38-x64"
           CONAN_VISUAL_VERSIONS: 15
-        - APPVEYOR_BUILD_WORKER_IMAGE: macos
 
 install:
   # Windows build
@@ -27,4 +27,8 @@ install:
   - sh: .appveyor/install.sh
 
 test_script:
-  - python build.py
+  # Windows build
+  - cmd: python build.py
+  # macOS build
+  - sh: chmod +x .appveyor/run.sh
+  - sh: .appveyor/run.sh
