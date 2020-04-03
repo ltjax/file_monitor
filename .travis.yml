@@ -1,19 +1,52 @@
+
+env:
+  global:
+    - CONAN_USERNAME: "ltjax"
+    - CONAN_LOGIN_USERNAME: "ltjax"
+    - CONAN_CHANNEL: "testing"
+    - CONAN_UPLOAD: "https://api.bintray.com/conan/ltjax/conan"
+    - CONAN_USER_HOME: "/tmp/conan"
+
+linux: &linux
+  os: linux
+  dist: xenial
+  language: cpp
+  addons:
+    apt:
+      update: true
+      sources:
+        - ubuntu-toolchain-r-test
+      packages:
+        - git
+        - build-essential
+        - python3-pip
+        - python3-setuptools
+osx: &osx
+  os: osx
+  language: generic
+matrix:
+  include:
+    - <<: *linux
+      env: GCC_VERSION=9 CONAN_GCC_VERSIONS=9 CONAN_BUILD_POLICY="missing"
+      
+    - <<: *linux
+      env: GCC_VERSION=8 CONAN_GCC_VERSIONS=8
+    
+# macOS 10.15 is currently not supported by travis, but required by file_monitor for <filesystem> (non boost mode)
+#    - <<: *osx
+#      osx_image: xcode11
+#      env: CONAN_APPLE_CLANG_VERSIONS=11.0
+        
 sudo: required
-services:
-  - docker
-  
-before_install:
-  - docker pull ubuntu:bionic
-  - docker run -itd --name build ubuntu:bionic
+
+cache:
+  directories:
+  - $CONAN_USER_HOME
+
+install:
+  - chmod +x .travis/install.sh
+  - ./.travis/install.sh
 
 script:
-  - docker exec build apt-get update > /dev/null
-  - docker exec build apt-get dist-upgrade -y > /dev/null
-  - docker exec build apt-get install git build-essential cmake python3-pip -y > /dev/null
-  - docker exec build pip3 install conan
-  - docker exec build git clone https://github.com/ltjax/file_monitor.git /source
-  - docker exec build mkdir -p /build
-  - docker exec build conan config install /source/conan_config
-  - docker exec build conan install /source -if /build
-  - docker exec build cmake -DCMAKE_BUILD_TYPE=Release -B/build -H/source
-  - docker exec build cmake --build /build
+  - chmod +x .travis/run.sh
+  - ./.travis/run.sh
