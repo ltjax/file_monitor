@@ -6,6 +6,7 @@ env:
     - CONAN_CHANNEL: "testing"
     - CONAN_UPLOAD: "https://api.bintray.com/conan/ltjax/conan"
     - CONAN_USER_HOME: "/tmp/conan"
+    - CONAN_ARCHS: "x86_64"
 
 linux: &linux
   os: linux
