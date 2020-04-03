@@ -46,6 +46,10 @@ class FilemonitorConan(ConanFile):
         self.cpp_info.libs = ["file_monitor"]
         if self.options.filesystem == "boost":
             self.cpp_info.defines = ["file_monitor_USE_BOOST"]
+        # Need to link to stdc++fs for g++8, or using <filesystem> will crash
+        if self.settings.os == "Linux" and self.settings.compiler == "gcc" and \
+                self.settings.compiler.version in ["8", "8.1", "8.2", "8.3"]:
+            self.cpp_info.libs = ["stdc++fs"]
         if self.settings.os == "Macos":
             self.cpp_info.frameworks = ["CoreFoundation", "CoreServices"]
 
