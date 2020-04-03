@@ -9,7 +9,7 @@ environment:
     
     matrix:
         - APPVEYOR_BUILD_WORKER_IMAGE: macos
-          CONAN_APPLE_CLANG_VERSIONS=11.0
+          CONAN_APPLE_CLANG_VERSIONS: "11.0"
         - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
           PYTHON: "C:\\Python38-x64"
           CONAN_VISUAL_VERSIONS: 16
