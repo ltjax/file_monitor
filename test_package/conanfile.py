@@ -20,6 +20,7 @@ class FilemonitorTestConan(ConanFile):
         self.copy('*.so*', dst='bin', src='lib')
 
     def test(self):
-        if not tools.cross_building(self.settings):
+        # Does not run standalone on macOS
+        if not tools.cross_building(self.settings) and self.settings.os != "Macos":
             os.chdir("bin")
             self.run(".%sexample" % os.sep)
