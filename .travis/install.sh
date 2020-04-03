@@ -8,7 +8,7 @@ if [[ "$(uname -s)" == 'Linux' ]]; then
     sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 60 --slave /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION}
     sudo update-alternatives --config gcc
     python3 --version
-    sudo pip3 install cmake
+    sudo pip3 install cmake==3.13.3
     pip3 install --upgrade pip --user
     pip --version
     pip install conan --upgrade --user
