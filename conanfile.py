@@ -58,7 +58,7 @@ class FilemonitorConan(ConanFile):
         # Need to link to stdc++fs for g++8, or using <filesystem> will crash
         if self.options.filesystem == "c++17" and self.settings.compiler == "gcc" and\
                 tools.Version(self.settings.compiler.version) < "9":
-            self.cpp_info.libs = ["stdc++fs"]
+            self.cpp_info.libs.append("stdc++fs")
         if self.settings.os == "Macos":
             self.cpp_info.frameworks = ["CoreFoundation", "CoreServices"]
 
