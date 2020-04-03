@@ -17,10 +17,14 @@ environment:
         - APPVEYOR_BUILD_WORKER_IMAGE: macos
 
 install:
-  - set PATH=%PATH%;%PYTHON%/Scripts/
-  - pip.exe install conan --upgrade
-  - pip.exe install conan_package_tools
-  - conan user # It creates the conan data directory
+  # Windows build
+  - cmd: set PATH=%PATH%;%PYTHON%/Scripts/
+  - cmd: pip.exe install conan --upgrade
+  - cmd: pip.exe install conan_package_tools
+  - cmd: conan user # It creates the conan data directory
+  # macOS build
+  - sh: chmod +x .appveyor/install.sh
+  - sh: .appveyor/install.sh
 
 test_script:
   - python build.py
