@@ -8,7 +8,7 @@ env:
     - CONAN_USER_HOME: "/tmp/conan"
     - CONAN_ARCHS: "x86_64"
 
-linux: &linux
+_linux: &linux
   os: linux
   dist: xenial
   language: cpp
@@ -22,23 +22,14 @@ linux: &linux
         - build-essential
         - python3-pip
         - python3-setuptools
-osx: &osx
-  os: osx
-  language: generic
-matrix:
+
+jobs:
   include:
     - <<: *linux
       env: GCC_VERSION=9 CONAN_GCC_VERSIONS=9
       
     - <<: *linux
       env: GCC_VERSION=8 CONAN_GCC_VERSIONS=8
-    
-# macOS 10.15 is currently not supported by travis, but required by file_monitor for <filesystem> (non boost mode)
-#    - <<: *osx
-#      osx_image: xcode11
-#      env: CONAN_APPLE_CLANG_VERSIONS=11.0
-        
-sudo: required
 
 cache:
   directories:
