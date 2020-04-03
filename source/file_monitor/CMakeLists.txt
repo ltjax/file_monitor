@@ -41,6 +41,12 @@ if(file_monitor_USE_BOOST)
     PUBLIC "file_monitor_USE_BOOST")
 endif()
 
+# Need to link to stdc++fs for g++8, or using <filesystem> will crash
+if(file_monitor_USE_CXX17)
+  target_link_libraries(${TARGET_NAME}
+    PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
+endif()
+
 if(file_monitor_PLATFORM STREQUAL PLATFORM_MACOS)
   target_link_libraries(${TARGET_NAME}
     PUBLIC "-framework CoreFoundation"
