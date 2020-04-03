@@ -1,4 +1,4 @@
-from conans import ConanFile, CMake, tools
+from conans import ConanFile, CMake, tools, ConanInvalidConfiguration
 
 
 class FilemonitorConan(ConanFile):
@@ -26,6 +26,14 @@ class FilemonitorConan(ConanFile):
         cmake.configure(source_folder=".", defs=defs)
         return cmake
 
+    def configure(self):
+        if self.options.filesystem == "c++17":
+            if self.settings.compiler == "gcc" and tools.Version(self.settings.compiler.version) < "8":
+                raise ConanInvalidConfiguration("Using <filesystem> requires at least g++ 8")
+            if self.settings.compiler == "apple-clang" and tools.Version(self.settings.compiler.version) < "11.0":
+                raise ConanInvalidConfiguration("Using <filesystem> requires at least apple-clang 11.0")
+
+
     def requirements(self):
         if self.options.filesystem == "boost":
             boost = ["boost_filesystem/1.69.0@bincrafters/stable",
@@ -47,8 +55,8 @@ class FilemonitorConan(ConanFile):
         if self.options.filesystem == "boost":
             self.cpp_info.defines = ["file_monitor_USE_BOOST"]
         # Need to link to stdc++fs for g++8, or using <filesystem> will crash
-        if self.settings.os == "Linux" and self.settings.compiler == "gcc" and \
-                self.settings.compiler.version in ["8", "8.1", "8.2", "8.3"]:
+        if self.options.filesystem == "c++17" and self.settings.compiler == "gcc" and\
+                tools.Version(self.settings.compiler.version) < "9":
             self.cpp_info.libs = ["stdc++fs"]
         if self.settings.os == "Macos":
             self.cpp_info.frameworks = ["CoreFoundation", "CoreServices"]
