@@ -10,7 +10,7 @@ environment:
           CONAN_VISUAL_VERSIONS: 15
 
 install:
-  - set PATH=%PATH%;%PYTHON%/Scripts/
+  - set PATH=%PYTHON%/Scripts/;%PATH%
   - pip.exe install conan --upgrade
   - conan user # It creates the conan data directory
 
