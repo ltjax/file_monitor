@@ -1,5 +1,6 @@
-from conans import ConanFile, CMake, tools
-from conans.errors import ConanInvalidConfiguration
+from conan import ConanFile, tools
+from conan.errors import ConanInvalidConfiguration
+from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps, cmake_layout
 
 
 class FilemonitorConan(ConanFile):
@@ -15,18 +16,19 @@ class FilemonitorConan(ConanFile):
                "filesystem": ["boost", "c++17"]}
     default_options = {"shared": False,
                        "filesystem": "c++17"}
-    generators = "cmake"
     exports_sources = "source/*", "tests/*", "CMakeLists.txt"
     
-    def _configured_cmake(self):
-        cmake = CMake(self)
-        defs={'file_monitor_USE_CONAN': 'ON',
-              'file_monitor_BUILD_TESTS': 'OFF',
-              'file_monitor_USE_BOOST': self.options.filesystem == "boost",
-              'file_monitor_USE_CXX17': self.options.filesystem == "c++17"}
-        cmake.configure(source_folder=".", defs=defs)
-        return cmake
+    def generate(self):
+        deps = CMakeDeps(self)
+        deps.generate()
 
+        toolchain = CMakeToolchain(self)
+        toolchain.variables['file_monitor_USE_CONAN'] = True
+        toolchain.variables['file_monitor_BUILD_TESTS'] = False
+        toolchain.variables['file_monitor_USE_BOOST'] = self.options.filesystem == "boost"
+        toolchain.variables['file_monitor_USE_CXX17'] = self.options.filesystem == "c++17"
+        toolchain.generate()
+    
     def configure(self):
         if self.options.filesystem == "c++17":
             if self.settings.compiler == "gcc" and tools.Version(self.settings.compiler.version) < "8":
@@ -46,10 +48,13 @@ class FilemonitorConan(ConanFile):
                 self.requires("boost_iostreams/1.69.0@bincrafters/stable")
 
     def build(self):
-        self._configured_cmake().build()
+        cmake = CMake(self)
+        cmake.configure()
+        cmake.build()
 
     def package(self):
-        self._configured_cmake().install()
+        cmake = CMake(self)
+        cmake.install()
 
     def package_info(self):
         self.cpp_info.libs = ["file_monitor"]
